@@ -66,7 +66,9 @@ int main(int argc, char *argv[]){
                 close(connfd);
                 close(acceptfd);
             }
+            return 0;
         }
     }
+    return 0;
 }
 
