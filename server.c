@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -20,8 +21,10 @@ int main(int argc, char *argv[]){
 
     for(;;){
         int connfd = socket(PF_INET, SOCK_STREAM, 0);
-        if(connect(connfd, (struct sockaddr *)&conn_addr, sizeof(conn_addr)) < 0)
+        if(connect(connfd, (struct sockaddr *)&conn_addr, sizeof(conn_addr)) < 0){
+            fputs("Cannot connect to remote server\n", stderr);
             return -1;
+        }
 
         if(listenfd == -1){
             listenfd = socket(PF_INET, SOCK_STREAM, 0);
