@@ -61,18 +61,38 @@ int main(int argc, char *argv[]){
             if(fork()){
                 for(;;){
                     int len = recv(connfd, buffer, BUFF_LEN, 0);
+                    if(len < 0){
+                        log(LOG_NOTICE, "recv from connfd failed");
+                        shutdown(connfd,SHUT_RD);
+                        shutdown(acceptfd,SHUT_WR);
+                    }
                     if(len == 0)
                         break;
-                    send(acceptfd, buffer, len, 0);
+                    len = send(acceptfd, buffer, len, 0);
+                    if(len < 0){
+                        log(LOG_NOTICE, "send to acceptfd failed");
+                        shutdown(acceptfd,SHUT_WR);
+                        shutdown(connfd,SHUT_RD);
+                    }
                 }
                 shutdown(connfd,SHUT_RD);
                 shutdown(acceptfd,SHUT_WR);
             }else{
                 for(;;){
                     int len = recv(acceptfd, buffer, BUFF_LEN, 0);
+                    if(len < 0){
+                        log(LOG_NOTICE, "recv from acceptfd failed");
+                        shutdown(acceptfd,SHUT_RD);
+                        shutdown(connfd,SHUT_WR);
+                    }
                     if(len == 0)
                         break;
-                    send(connfd, buffer, len, 0);
+                    len = send(connfd, buffer, len, 0);
+                    if(len < 0){
+                        log(LOG_NOTICE, "send to connfd failed");
+                        shutdown(connfd,SHUT_WR);
+                        shutdown(acceptfd,SHUT_RD);
+                    }
                 }
                 shutdown(acceptfd,SHUT_RD);
                 shutdown(connfd,SHUT_WR);
