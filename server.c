@@ -53,8 +53,8 @@ int main(int argc, char *argv[]){
                         break;
                     send(acceptfd, buffer, len, 0);
                 }
-                close(acceptfd);
-                close(connfd);
+                shutdown(connfd,SHUT_RD);
+                shutdown(acceptfd,SHUT_WR);
             }else{
                 char buffer[BUFF_LEN];
                 for(;;){
@@ -63,8 +63,8 @@ int main(int argc, char *argv[]){
                         break;
                     send(connfd, buffer, len, 0);
                 }
-                close(connfd);
-                close(acceptfd);
+                shutdown(acceptfd,SHUT_RD);
+                shutdown(connfd,SHUT_WR);
             }
             return 0;
         }
