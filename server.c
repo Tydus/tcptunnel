@@ -1,9 +1,17 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
 #define BUFF_LEN 32768
+
+int log(int priority, const char *format, ...){
+    va_list ap;
+    va_start(ap, format);
+    vsyslog(priority, format, ap);
+    va_end(ap);
+}
 
 int main(int argc, char *argv[]){
 
