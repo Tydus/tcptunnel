@@ -57,8 +57,8 @@ int main(int argc, char *argv[]){
         );
 
         if(!fork()){
+            char buffer[BUFF_LEN];
             if(fork()){
-                char buffer[BUFF_LEN];
                 for(;;){
                     int len = recv(connfd, buffer, BUFF_LEN, 0);
                     if(len == 0)
@@ -68,7 +68,6 @@ int main(int argc, char *argv[]){
                 shutdown(connfd,SHUT_RD);
                 shutdown(acceptfd,SHUT_WR);
             }else{
-                char buffer[BUFF_LEN];
                 for(;;){
                     int len = recv(acceptfd, buffer, BUFF_LEN, 0);
                     if(len == 0)
