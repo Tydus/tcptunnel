@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 
 #include "sha1.h"
 #include "b64.h"
@@ -22,6 +23,7 @@ int sn_log(int priority, const char *str){
         syslog(priority, str, strlen(str));
     return 0;
 }
+
 
 int calc_ws_protocol_ret(const char *challenge, char *response){
     const char *magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -40,19 +42,130 @@ int calc_ws_protocol_ret(const char *challenge, char *response){
     return 0;
 }
 
+
+static struct option options[]={
+    {"help",         no_argument,       NULL, 'h'},
+    {"stderr",       no_argument,       NULL, 'e'},
+};
+
 int main(int argc, char *argv[]){
 
+    const char *helpstr =
+#ifdef TCPT_SERVER
+        "TCPTunnel Server\n"
+        "\n"
+        "%s [-h] [-e] <Listen Port> <Connect URL>\n"
+        "\n"
+        "Listen Port        specify port to listen on\n"
+        "Connect URL        websocket url to connect\n"
+#endif
+#ifdef TCPT_CLIENT
+        "TCPTunnel Client\n"
+        "\n"
+        "%s [-h] [-e] <Listen Path> <Connect URL>\n"
+        "Listen Path        specify path to listen on\n"
+        "Connect Host       remote tcp server to connect\n"
+        "Connect Port       remote port to connect\n"
+#endif
+        "-h,  --help        print this help.\n"
+        "-e,  --stderr      write logs to stderr.\n";
+
+    for(;;){
+        int c = getopt_long(argc, argv, args, "he", NULL);
+        if(c == -1)
+            break;
+
+        switch(c){
+        case 'h':
+            printf(helpstr, argv[0]);
+            return -1;
+            break;
+        case 'e':
+            log_to_stderr = 1;
+            break;
+        default:
+            break;
+        }
+
+        struct sockaddr_in conn_addr;
+        conn_addr.sin_family = AF_INET;
+
+        struct sockaddr_in listen_addr;
+        listen_addr.sin_family = AF_INET;
+        listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+
+#define next_opt (argv[optind++])
+#ifdef TCPT_SERVER
+        if(argc - optind != 3){
+            puts("insufficient argument count");
+            printf(helpstr, argv[0]);
+            return -1;
+        }
+        const char *listen_path = next_opt;
+
+        const char *connect_host = next_opt;
+        struct hostent *p = gethostbyname(connect_host);
+        if(p == NULL || p->h_length == 0){
+            printf("cannot find host: %s",connect_host);
+            return -1;
+        }
+        conn_addr.sin_addr.s_addr = (uint32_t*)p->h_addr_list[0];
+        free(*p);
+
+        conn_addr.sin_port = htons(atoi(next_opt));
+
+#endif
+#ifdef TCPT_CLIENT
+        if(argc - optind != 2){
+            puts("insufficient argument count");
+            printf(helpstr, argv[0]);
+            return -1;
+        }
+
+        listen_addr.sin_port = htons(atoi(next_opt));
+
+        const char *connect_url = next_opt;
+
+        // Parse connect url
+        char connect_url_host[strlen(connect_url) + 1];
+        char connect_url_path[strlen(connect_url) + 1];
+        if(sscanf(
+            connect_url,
+            "ws://%[^/]%s",
+            connect_url_host,
+            connect_url_path
+        ) != 2){
+            puts("invalid websocket url");
+            printf(helpstr, argv[0]);
+            return -1;
+        }
+        if(strrchr(connect_url_host, '[') != NULL){
+            puts("ipv6 is not supported yet");
+            return -1;
+        }
+
+        conn_addr.sin_port = htons(80);
+        char *tmp = strrchr(connect_url_host, ":");
+        if(tmp != NULL){
+            // the host has port specified
+            *tmp++ = '\0';
+            conn_addr.sin_port = htons(atoi(tmp));
+        }
+            
+        struct hostent *p = gethostbyname(connect_url_host);
+        if(p == NULL || p->h_length == 0){
+            printf("cannot find host: %s",connect_url_host);
+            return -1;
+        }
+        conn_addr.sin_addr.s_addr = (uint32_t*)p->h_addr_list[0];
+        free(*p);
+
+#endif
+#undef next_opt
+
+
     srand(getpid());
-
-    struct sockaddr_in conn_addr;
-    conn_addr.sin_family = AF_INET;
-    conn_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    conn_addr.sin_port = htons(1080);
-
-    struct sockaddr_in listen_addr;
-    listen_addr.sin_family = AF_INET;
-    listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    listen_addr.sin_port = htons(8278); // TCPT
 
     char buffer[BUFF_LEN];
     size_t len;
