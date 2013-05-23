@@ -1,5 +1,5 @@
-SRCS := b64.c server.c sha1.c sha1-test.c
-OBJS := $(OBJS:.c=.o)
+SRCS := b64.c sha1.c
+OBJS := $(SRCS:.c=.o)
 OUT  := server client
 
 CFLAGS += -g -O2
@@ -10,11 +10,14 @@ all: $(OUT)
 tags: *.c *.h
 	ctags -R
 
-server: $(OBJS)
+server: $(OBJS) server.c
 	$(CC) $(CFLAGS) -o $@ $^ -DTCPT_SERVER
 
-client: $(OBJS)
+client: $(OBJS) server.c
 	$(CC) $(CFLAGS) -o $@ $^ -DTCPT_CLIENT
+
+$(OBJS): %.o:%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 clean: 
 	$(RM) $(OBJS)
