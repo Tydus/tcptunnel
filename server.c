@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <getopt.h>
 #include <netdb.h>
 
 #include "sha1.h"
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]){
         "-e,  --stderr      write logs to stderr.\n";
 
     for(;;){
-        int c = getopt_long(argc, argv, args, "he", NULL);
+        int c = getopt_long(argc, argv, "he", options, NULL);
         if(c == -1)
             break;
 
@@ -86,6 +87,7 @@ int main(int argc, char *argv[]){
         default:
             break;
         }
+    }
 
         struct sockaddr_in conn_addr;
         conn_addr.sin_family = AF_INET;
@@ -110,8 +112,8 @@ int main(int argc, char *argv[]){
             printf("cannot find host: %s",connect_host);
             return -1;
         }
-        conn_addr.sin_addr.s_addr = (uint32_t*)p->h_addr_list[0];
-        free(*p);
+        conn_addr.sin_addr.s_addr = *(uint32_t*)p->h_addr_list[0];
+        free(p);
 
         conn_addr.sin_port = htons(atoi(next_opt));
 
@@ -146,7 +148,7 @@ int main(int argc, char *argv[]){
         }
 
         conn_addr.sin_port = htons(80);
-        char *tmp = strrchr(connect_url_host, ":");
+        char *tmp = strchr(connect_url_host, ':');
         if(tmp != NULL){
             // the host has port specified
             *tmp++ = '\0';
@@ -158,8 +160,8 @@ int main(int argc, char *argv[]){
             printf("cannot find host: %s",connect_url_host);
             return -1;
         }
-        conn_addr.sin_addr.s_addr = (uint32_t*)p->h_addr_list[0];
-        free(*p);
+        conn_addr.sin_addr.s_addr = *(uint32_t*)p->h_addr_list[0];
+        free(p);
 
 #endif
 #undef next_opt
