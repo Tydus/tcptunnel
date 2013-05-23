@@ -1,7 +1,3 @@
-#ifdef TCPT_CLIENT
-#define _BSD_SOURCE 1
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,6 +37,8 @@ int calc_ws_protocol_ret(const char *challenge, char *response){
 }
 
 int main(int argc, char *argv[]){
+
+    srand(getpid());
 
     struct sockaddr_in conn_addr;
     conn_addr.sin_family = AF_INET;
@@ -82,7 +80,7 @@ int main(int argc, char *argv[]){
         // Calc a random string for Sec-Websocket-Key
         uint8_t rand_str[16];
         for(int i=0;i<16;i++)
-            rand_str[i]=random()&0xFF;
+            rand_str[i]=rand()&0xFF;
 
         char b64ed_rand_str[32], expected_response_str[64];
         b64_encode(rand_str, 16, b64ed_rand_str, 32);
