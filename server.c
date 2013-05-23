@@ -113,7 +113,6 @@ int main(int argc, char *argv[]){
             return -1;
         }
         conn_addr.sin_addr.s_addr = *(uint32_t*)p->h_addr_list[0];
-        free(p);
 
         conn_addr.sin_port = htons(atoi(next_opt));
 
@@ -161,7 +160,6 @@ int main(int argc, char *argv[]){
             return -1;
         }
         conn_addr.sin_addr.s_addr = *(uint32_t*)p->h_addr_list[0];
-        free(p);
 
 #endif
 #undef next_opt
