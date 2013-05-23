@@ -1,14 +1,15 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 static const char encode[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			     "abcdefghijklmnopqrstuvwxyz0123456789+/";
 static const char decode[] = "|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW"
 			     "$$$$$$XYZ[\\]^_`abcdefghijklmnopq";
 
-int b64_encode(const char *in, int in_len, char *out, int out_size)
+int b64_encode(const uint8_t *in, int in_len, char *out, int out_size)
 {
-	unsigned char triple[3];
+	uint8_t triple[3];
 	int i;
 	int len;
 	int line = 0;
@@ -49,13 +50,13 @@ int b64_encode(const char *in, int in_len, char *out, int out_size)
 	return done;
 }
 
-int b64_decode(const char *in, char *out, int out_size)
+int b64_decode(const char *in, uint8_t *out, int out_size)
 {
 	int len;
 	int i;
 	int done = 0;
-	unsigned char v;
-	unsigned char quad[4];
+	uint8_t v;
+	uint8_t quad[4];
 
 	while(*in){
 
