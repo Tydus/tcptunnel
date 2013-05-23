@@ -13,9 +13,13 @@
 
 #define BUFF_LEN 32768
 
+int log_to_stderr = 0;
 
 int sn_log(int priority, const char *str){
-    syslog(priority, str, strlen(str));
+    if(log_to_stderr)
+        fputs(str, stderr);
+    else
+        syslog(priority, str, strlen(str));
     return 0;
 }
 
