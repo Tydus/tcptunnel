@@ -185,8 +185,8 @@ int main(int argc, char *argv[]){
 
 #ifdef TCPT_CLIENT
         const char *http_req_data =
-            "GET / HTTP/1.1\r\n"
-            "Host: %s\r\n"
+            "GET %s HTTP/1.1\r\n"
+            "Host: %s:%d\r\n"
             "Connection: Upgrade\r\n"
             "Upgrade: websocket\r\n"
             "Sec-WebSocket-Key: %s\r\n"
@@ -209,7 +209,9 @@ int main(int argc, char *argv[]){
             buffer,
             BUFF_LEN,
             http_req_data,
-            "du.m.my",
+            connect_url_path,
+            connect_url_host,
+            htons(conn_addr.sin_port),
             b64ed_rand_str
         );
         len = send(connfd, buffer, len, 0);
