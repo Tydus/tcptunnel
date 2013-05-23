@@ -1,4 +1,9 @@
+#ifdef TCPT_CLIENT
+#define _BSD_SOURCE 1
+#endif
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <syslog.h>
@@ -62,6 +67,132 @@ int main(int argc, char *argv[]){
             fputs("Cannot connect to remote server\n", stderr);
             return -1;
         }
+
+#ifdef TCPT_CLIENT
+        const char *http_req_data =
+            "GET / HTTP/1.1\r\n"
+            "Host: %s\r\n"
+            "Connection: Upgrade\r\n"
+            "Upgrade: websocket\r\n"
+            "Sec-WebSocket-Key: %s\r\n"
+            "Sec-WebSocket-Protocol: chat\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n";
+
+        // Calc a random string for Sec-Websocket-Key
+        uint8_t rand_str[16];
+        for(int i=0;i<16;i++)
+            rand_str[i]=random()&0xFF;
+
+        char b64ed_rand_str[32], expected_response_str[64];
+        b64_encode(rand_str, 16, b64ed_rand_str, 32);
+
+        calc_ws_protocol_ret(b64ed_rand_str, expected_response_str);
+
+        // Form packet
+        len = snprintf(
+            buffer,
+            BUFF_LEN,
+            http_req_data,
+            "du.m.my",
+            b64ed_rand_str
+        );
+        len = send(connfd, buffer, len, 0);
+        if(len < 0){
+            sn_log(LOG_NOTICE, "send to connfd failed");
+            shutdown(connfd,SHUT_RDWR);
+            return -1;
+        }
+
+        // Wait for response
+        len = recv(connfd, buffer, BUFF_LEN, 0);
+        if(len < 0){
+            sn_log(LOG_NOTICE, "recv from connfd failed");
+            shutdown(connfd,SHUT_RDWR);
+            return -1;
+        }
+
+        int ws_checker = 0;
+
+        // Parse response packet
+        for(char *p = buffer; ; p=NULL){
+            char *line = strtok(p, "\n");
+            if(line[0] == '\r'){
+                sn_log(LOG_DEBUG, "reach http eoh");
+                break;
+            }
+            if(line[0] == '\0'){
+                sn_log(LOG_INFO, "reached EOP, but no http EOH found");
+                shutdown(connfd,SHUT_RDWR);
+                return -1;
+            }
+            line[strlen(line)-2] = '\0'; // trim trailing '\r'
+
+            if(p){
+                // We are at the first line
+                float version;
+                int code;
+                sscanf(line, "HTTP/%f %d", &version, &code);
+                if(code != 101){
+                    sn_log(LOG_ERR, "HTTP status code not 101");
+                    shutdown(connfd,SHUT_RDWR);
+                    return -1;
+                }
+
+            }else{
+                // optional headers
+                char *key = line;
+                char *value = strchr(line, ':');
+                if(value == NULL){
+                    sn_log(LOG_ERR, "malformed optional header");
+                    shutdown(connfd,SHUT_RDWR);
+                }
+                *value = '\0';
+
+                // strip the leading spaces
+                while(*++value == ' ');
+
+#define match(s) if(!strcasecmp(key,(s)))
+                match("Connection"){
+                    if(strcasecmp(value, "upgrade")){
+                        sn_log(LOG_ERR, "Connection is not upgrade");
+                        shutdown(connfd,SHUT_RDWR);
+                        return -1;
+                    }
+                    ws_checker++;
+                }
+                match("Upgrade"){
+                    if(strcasecmp(value, "websocket")){
+                        sn_log(LOG_ERR, "Upgrade is not websocket");
+                        shutdown(connfd,SHUT_RDWR);
+                        return -1;
+                    }
+                    ws_checker++;
+                }
+                match("Sec-WebSocket-Protocol"){
+                    ws_checker++;
+                }
+                match("Sec-WebSocket-Accept"){
+                    if(strcmp(value, expected_response_str)){
+                        sn_log(LOG_ERR, "Malformed Sec-WebSocket-Accept");
+                        shutdown(connfd,SHUT_RDWR);
+                        return -1;
+                    }
+                    ws_checker++;
+                }
+#undef match
+            }
+
+        
+        }
+        if(ws_checker != 4){
+            sn_log(LOG_ERR, "websocket protocol missing mandatory headers");
+            shutdown(connfd,SHUT_RDWR);
+            return -1;
+        }
+        sn_log(LOG_DEBUG, "Finish parsing handshake headers, start listening to native socket");
+
+#endif // TCPT_CLIENT
 
         if(listenfd == -1){
             listenfd = socket(PF_INET, SOCK_STREAM, 0);
