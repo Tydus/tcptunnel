@@ -4,6 +4,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "sha1.h"
+#include "b64.h"
+
 #define BUFF_LEN 32768
 
 int log(int priority, const char *format, ...){
@@ -11,6 +14,23 @@ int log(int priority, const char *format, ...){
     va_start(ap, format);
     vsyslog(priority, format, ap);
     va_end(ap);
+}
+
+int calc_ws_protocol_ret(const char *challenge, char *response){
+    const char *magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    int len = strlen(challenge) + strlen(magic_string);
+    char input[len + 1];
+    sprintf(input, "%s%s", challenge, magic_string);
+
+    uint8_t sha1_digest[SHA1HashSize];
+    SHA1Context s;
+    SHA1Reset(&s);
+    SHA1Input(&s, input, len);
+    SHA1Result(&s, sha1_digest);
+
+    b64_encode(sha1_digest, SHA1HashSize, response, 64);
+
+    return 0;
 }
 
 int main(int argc, char *argv[]){
