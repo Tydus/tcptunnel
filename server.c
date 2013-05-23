@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <syslog.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -14,6 +15,7 @@
 
 int sn_log(int priority, const char *str){
     syslog(priority, str, strlen(str));
+    return 0;
 }
 
 int calc_ws_protocol_ret(const char *challenge, char *response){
@@ -25,7 +27,7 @@ int calc_ws_protocol_ret(const char *challenge, char *response){
     uint8_t sha1_digest[SHA1HashSize];
     SHA1Context s;
     SHA1Reset(&s);
-    SHA1Input(&s, input, len);
+    SHA1Input(&s, (uint8_t *)input, len);
     SHA1Result(&s, sha1_digest);
 
     b64_encode(sha1_digest, SHA1HashSize, response, 64);
@@ -69,7 +71,7 @@ int main(int argc, char *argv[]){
 
         }
         struct sockaddr_in sin;
-        int len = sizeof(struct sockaddr_in);
+        socklen_t len = sizeof(struct sockaddr_in);
         int acceptfd = accept(
             listenfd,
             (struct sockaddr *)&sin,
@@ -109,11 +111,10 @@ int main(int argc, char *argv[]){
                 }
                 if(line[0] == '\0'){
                     sn_log(LOG_INFO, "reached EOP, but no http EOH found");
-                        send(acceptfd, bad_req, strlen(bad_req), 0);
-                        shutdown(connfd,SHUT_RDWR);
-                        shutdown(acceptfd,SHUT_RDWR);
-                        return -1;
-                    }
+                    send(acceptfd, bad_req, strlen(bad_req), 0);
+                    shutdown(connfd,SHUT_RDWR);
+                    shutdown(acceptfd,SHUT_RDWR);
+                    return -1;
                 }
                 line[strlen(line)-2] = '\0'; // trim trailing '\r'
 
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]){
                     char *key   = strtok(line, ":");
                     char *value = strtok(NULL, ":");
                     // strip the leading spaces
-                    while(*value == " ")
+                    while(*value == ' ')
                         value++;
 
                     if(!key || !value){
@@ -181,7 +182,7 @@ int main(int argc, char *argv[]){
 
             
             }
-            if(!iswebsocket){
+            if(!ws_checker == 0){
                 sn_log(LOG_INFO, "http request, send 404");
                 send(acceptfd, bad_req, strlen(not_found), 0);
                 shutdown(connfd,SHUT_RDWR);
