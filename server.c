@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <syslog.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -9,11 +11,9 @@
 
 #define BUFF_LEN 32768
 
-int log(int priority, const char *format, ...){
-    va_list ap;
-    va_start(ap, format);
-    vsyslog(priority, format, ap);
-    va_end(ap);
+
+int sn_log(int priority, const char *str){
+    syslog(priority, str, strlen(str));
 }
 
 int calc_ws_protocol_ret(const char *challenge, char *response){
@@ -83,11 +83,11 @@ int main(int argc, char *argv[]){
             // Wait for websocket HTTP Handshake
             int len = recv(connfd, buffer, BUFF_LEN, 0);
             if(len < 0){
-                log(LOG_NOTICE, "recv from connfd failed");
+                sn_log(LOG_NOTICE, "recv from connfd failed");
                 shutdown(connfd,SHUT_RDWR);
                 shutdown(acceptfd,SHUT_RDWR);
             }
-            log(LOG_DEBUG, "Got http handshake packet");
+            sn_log(LOG_DEBUG, "Got http handshake packet");
 
             // Parse the request
             const char *bad_req = 
@@ -104,11 +104,11 @@ int main(int argc, char *argv[]){
             for(char *p = buffer; ; p=NULL){
                 char *line = strtok(p, "\n");
                 if(line[0] == '\r'){
-                    log(LOG_DEBUG, "reach http eoh");
+                    sn_log(LOG_DEBUG, "reach http eoh");
                     break;
                 }
                 if(line[0] == '\0'){
-                    log(LOG_INFO, "reached EOP, but no http EOH found");
+                    sn_log(LOG_INFO, "reached EOP, but no http EOH found");
                         send(acceptfd, bad_req, strlen(bad_req), 0);
                         shutdown(connfd,SHUT_RDWR);
                         shutdown(acceptfd,SHUT_RDWR);
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]){
                         value++;
 
                     if(!key || !value){
-                        log(LOG_ERR, "malformed optional header");
+                        sn_log(LOG_ERR, "malformed optional header");
                         send(acceptfd, bad_req, strlen(bad_req), 0);
                         shutdown(connfd,SHUT_RDWR);
                         shutdown(acceptfd,SHUT_RDWR);
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]){
 #define match(s) if(!strcasecmp(key,(s)))
                     match("Connection"){
                         if(strcasecmp(value, "upgrade")){
-                            log(LOG_ERR, "Connection is not upgrade");
+                            sn_log(LOG_ERR, "Connection is not upgrade");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
                             shutdown(connfd,SHUT_RDWR);
                             shutdown(acceptfd,SHUT_RDWR);
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]){
                     }
                     match("Upgrade"){
                         if(strcasecmp(value, "websocket")){
-                            log(LOG_ERR, "Upgrade is not websocket");
+                            sn_log(LOG_ERR, "Upgrade is not websocket");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
                             shutdown(connfd,SHUT_RDWR);
                             shutdown(acceptfd,SHUT_RDWR);
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]){
                     }
                     match("Sec-WebSocket-Version"){
                         if(strcmp(value, "13")){
-                            log(LOG_ERR, "Sec-WebSocket-Version is not 13");
+                            sn_log(LOG_ERR, "Sec-WebSocket-Version is not 13");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
                             shutdown(connfd,SHUT_RDWR);
                             shutdown(acceptfd,SHUT_RDWR);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]){
                     }
                     match("Sec-WebSocket-Protocol"){
                         if(!calc_ws_protocol_ret(value, ws_protocol_ret)){
-                            log(LOG_ERR, "Malformed Sec-WebSocket-Protocol");
+                            sn_log(LOG_ERR, "Malformed Sec-WebSocket-Protocol");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
                             shutdown(connfd,SHUT_RDWR);
                             shutdown(acceptfd,SHUT_RDWR);
@@ -182,20 +182,20 @@ int main(int argc, char *argv[]){
             
             }
             if(!iswebsocket){
-                log(LOG_INFO, "http request, send 404");
+                sn_log(LOG_INFO, "http request, send 404");
                 send(acceptfd, bad_req, strlen(not_found), 0);
                 shutdown(connfd,SHUT_RDWR);
                 shutdown(acceptfd,SHUT_RDWR);
                 return -1;
             }
             if(ws_checker != 4){
-                log(LOG_ERR, "websocket protocol missing mandatory headers");
+                sn_log(LOG_ERR, "websocket protocol missing mandatory headers");
                 send(acceptfd, bad_req, strlen(bad_req), 0);
                 shutdown(connfd,SHUT_RDWR);
                 shutdown(acceptfd,SHUT_RDWR);
                 return -1;
             }
-            log(LOG_DEBUG, "Finish parsing handshake headers, write response");
+            sn_log(LOG_DEBUG, "Finish parsing handshake headers, write response");
 
             // Form handshake response
             const char *ret =
@@ -209,19 +209,19 @@ int main(int argc, char *argv[]){
             len = snprintf(buffer, BUFF_LEN, ret, ws_protocol_ret);
             len = send(acceptfd, buffer, len, 0);
             if(len < 0){
-                log(LOG_NOTICE, "send to connfd failed");
+                sn_log(LOG_NOTICE, "send to connfd failed");
                 shutdown(connfd,SHUT_RDWR);
                 shutdown(acceptfd,SHUT_RDWR);
                 return -1;
             }
-            log(LOG_DEBUG, "sent handshake response, entering full duplex");
+            sn_log(LOG_DEBUG, "sent handshake response, entering full duplex");
 
             if(fork()){
-                log(LOG_DEBUG, "read from connfd process started");
+                sn_log(LOG_DEBUG, "read from connfd process started");
                 for(;;){
                     len = recv(connfd, buffer, BUFF_LEN, 0);
                     if(len < 0){
-                        log(LOG_NOTICE, "recv from connfd failed");
+                        sn_log(LOG_NOTICE, "recv from connfd failed");
                         shutdown(connfd,SHUT_RD);
                         shutdown(acceptfd,SHUT_WR);
                         return -1;
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]){
                         break;
                     len = send(acceptfd, buffer, len, 0);
                     if(len < 0){
-                        log(LOG_NOTICE, "send to acceptfd failed");
+                        sn_log(LOG_NOTICE, "send to acceptfd failed");
                         shutdown(acceptfd,SHUT_WR);
                         shutdown(connfd,SHUT_RD);
                         return -1;
@@ -239,11 +239,11 @@ int main(int argc, char *argv[]){
                 shutdown(connfd,SHUT_RD);
                 shutdown(acceptfd,SHUT_WR);
             }else{
-                log(LOG_DEBUG, "write to connfd process started");
+                sn_log(LOG_DEBUG, "write to connfd process started");
                 for(;;){
                     len = recv(acceptfd, buffer, BUFF_LEN, 0);
                     if(len < 0){
-                        log(LOG_NOTICE, "recv from acceptfd failed");
+                        sn_log(LOG_NOTICE, "recv from acceptfd failed");
                         shutdown(acceptfd,SHUT_RD);
                         shutdown(connfd,SHUT_WR);
                         return -1;
@@ -252,7 +252,7 @@ int main(int argc, char *argv[]){
                         break;
                     len = send(connfd, buffer, len, 0);
                     if(len < 0){
-                        log(LOG_NOTICE, "send to connfd failed");
+                        sn_log(LOG_NOTICE, "send to connfd failed");
                         shutdown(connfd,SHUT_WR);
                         shutdown(acceptfd,SHUT_RD);
                         return -1;
