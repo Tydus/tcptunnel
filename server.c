@@ -47,6 +47,9 @@ int main(int argc, char *argv[]){
     listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     listen_addr.sin_port = htons(8278); // TCPT
 
+    char buffer[BUFF_LEN];
+    size_t len;
+
     int listenfd = -1;
 
     for(;;){
@@ -79,8 +82,6 @@ int main(int argc, char *argv[]){
         );
 
         if(!fork()){
-            char buffer[BUFF_LEN];
-
 
 #ifdef TCPT_SERVER
             // Wait for websocket HTTP Handshake
