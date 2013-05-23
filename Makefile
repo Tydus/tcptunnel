@@ -2,8 +2,8 @@ SRCS := b64.c sha1.c
 OBJS := $(SRCS:.c=.o)
 OUT  := server client
 
-CFLAGS += -g -O2
 override CFLAGS += -std=c99 -Wall
+CFLAGS += -O2
 
 all: $(OUT)
 
