@@ -82,6 +82,7 @@ int main(int argc, char *argv[]){
             char buffer[BUFF_LEN];
 
 
+#ifdef TCPT_SERVER
             // Wait for websocket HTTP Handshake
             int len = recv(connfd, buffer, BUFF_LEN, 0);
             if(len < 0){
@@ -217,6 +218,8 @@ int main(int argc, char *argv[]){
                 return -1;
             }
             sn_log(LOG_DEBUG, "sent handshake response, entering full duplex");
+
+#endif //TCPT_SERVER
 
             if(fork()){
                 sn_log(LOG_DEBUG, "read from connfd process started");
