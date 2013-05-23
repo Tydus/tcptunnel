@@ -74,18 +74,18 @@ int main(int argc, char *argv[]){
 
         }
         struct sockaddr_in sin;
-        socklen_t len = sizeof(struct sockaddr_in);
+        socklen_t sin_len = sizeof(struct sockaddr_in);
         int acceptfd = accept(
             listenfd,
             (struct sockaddr *)&sin,
-            &len
+            &sin_len
         );
 
         if(!fork()){
 
 #ifdef TCPT_SERVER
             // Wait for websocket HTTP Handshake
-            int len = recv(connfd, buffer, BUFF_LEN, 0);
+            len = recv(connfd, buffer, BUFF_LEN, 0);
             if(len < 0){
                 sn_log(LOG_NOTICE, "recv from connfd failed");
                 shutdown(connfd,SHUT_RDWR);
