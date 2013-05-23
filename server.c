@@ -103,8 +103,8 @@ int main(int argc, char *argv[]){
             int ws_checker = 0;
             char ws_protocol_ret[64] = "";
 
-            for(char *p = buffer; ; p=NULL){
-                char *line = strtok(p, "\n");
+            for(char *p = buffer, line_save; ; p=NULL){
+                char *line = strtok(p, "\n", &line_save);
                 if(line[0] == '\r'){
                     sn_log(LOG_DEBUG, "reach http eoh");
                     break;
@@ -123,8 +123,9 @@ int main(int argc, char *argv[]){
                     // Simply ignore it
                 }else{
                     // optional headers
-                    char *key   = strtok(line, ":");
-                    char *value = strtok(NULL, ":");
+                    char *token_save;
+                    char *key   = strtok_r(line, ":", &token_save);
+                    char *value = strtok_r(NULL, ":", &token_save);
                     // strip the leading spaces
                     while(*value == ' ')
                         value++;
