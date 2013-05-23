@@ -169,14 +169,17 @@ int main(int argc, char *argv[]){
                         }
                         ws_checker++;
                     }
-                    match("Sec-WebSocket-Protocol"){
+                    match("Sec-WebSocket-Key"){
                         if(!calc_ws_protocol_ret(value, ws_protocol_ret)){
-                            sn_log(LOG_ERR, "Malformed Sec-WebSocket-Protocol");
+                            sn_log(LOG_ERR, "Malformed Sec-WebSocket-Key");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
                             shutdown(connfd,SHUT_RDWR);
                             shutdown(acceptfd,SHUT_RDWR);
                             return -1;
                         }
+                        ws_checker++;
+                    }
+                    match("Sec-WebSocket-Protocol"){
                         ws_checker++;
                     }
 #undef match
@@ -191,7 +194,7 @@ int main(int argc, char *argv[]){
                 shutdown(acceptfd,SHUT_RDWR);
                 return -1;
             }
-            if(ws_checker != 4){
+            if(ws_checker != 5){
                 sn_log(LOG_ERR, "websocket protocol missing mandatory headers");
                 send(acceptfd, bad_req, strlen(bad_req), 0);
                 shutdown(connfd,SHUT_RDWR);
