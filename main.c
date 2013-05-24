@@ -62,6 +62,15 @@ int sn_log(int priority, const char *format, ...){
     return 0;
 }
 
+uint32_t getipbyfqdn(const char *fqdn){
+    struct hostent *p = gethostbyname(fqdn);
+    if(p == NULL || p->h_length == 0){
+        printf("cannot find host: %s", fqdn);
+        return -1;
+    }
+    return *(uint32_t *)p->h_addr_list[0];
+}
+
 int set_sockopt_int(int socket, int family, int key, int value){
     int old;
     socklen_t len = sizeof(old);
@@ -195,13 +204,7 @@ int main(int argc, char *argv[]){
 
     const char *listen_path = next_opt;
 
-    const char *connect_host = next_opt;
-    struct hostent *p = gethostbyname(connect_host);
-    if(p == NULL || p->h_length == 0){
-        printf("cannot find host: %s",connect_host);
-        return -1;
-    }
-    conn_addr.sin_addr.s_addr = *(uint32_t*)p->h_addr_list[0];
+    conn_addr.sin_addr.s_addr = getipbyfqdn(next_opt);
 
     conn_addr.sin_port = htons(atoi(next_opt));
 
@@ -242,12 +245,7 @@ int main(int argc, char *argv[]){
         conn_addr.sin_port = htons(atoi(tmp));
     }
         
-    struct hostent *p = gethostbyname(connect_url_host);
-    if(p == NULL || p->h_length == 0){
-        printf("cannot find host: %s",connect_url_host);
-        return -1;
-    }
-    conn_addr.sin_addr.s_addr = *(uint32_t*)p->h_addr_list[0];
+    conn_addr.sin_addr.s_addr = getipbyfqdn(connect_url_host);
 
 #endif
 #undef next_opt
