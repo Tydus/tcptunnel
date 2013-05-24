@@ -23,14 +23,14 @@
 #endif
 
 typedef struct __attribute__((packed)){
-    int fin:1;
-    int rsv1:1;
-    int rsv2:1;
-    int rsv3:1;
+    unsigned fin:1;
+    unsigned rsv1:1;
+    unsigned rsv2:1;
+    unsigned rsv3:1;
     //enum WS_FRAME_OPCODE opcode:4;
-    int opcode:4;
-    int mask:1;
-    int len:7;
+    unsigned opcode:4;
+    unsigned mask:1;
+    unsigned len:7;
 }WS_FRAME_HDR;
 
 
@@ -616,7 +616,7 @@ int main(int argc, char *argv[]){
                     // Encode the packet
 
                     // process varlength header
-                    int content_len = len;
+                    size_t content_len = len;
                     len += 2; // mandatory header
 
                     if(content_len > 0xffff){
@@ -624,13 +624,18 @@ int main(int argc, char *argv[]){
                         content_len = 127;
                         len += 8;
                     }
-                    else if(len > 0xff){
-                        *(uint64_t *)(p -= 2) = content_len;
+                    else if(content_len > 126){
+                        *(uint16_t *)(p -= 2) = content_len;
                         content_len = 126;
                         len += 2;
                     }
 
-                    sn_log(LOG_DEBUG, "send len = %d", len);
+                    sn_log(
+                        LOG_DEBUG,
+                        "send len = %d, content_len = %d",
+                        len,
+                        content_len
+                    );
 
                     // form header
                     // TODO: implement masking
@@ -678,11 +683,13 @@ int main(int argc, char *argv[]){
                     size_t content_len = p_header->len;
 
                     if(content_len == 127){
-                        content_len = *(uint64_t *)(p += 8);
+                        content_len = *(uint64_t *)p;
+                        p += 8;
                         len -= 8;
                     }
                     else if(content_len == 126){
-                        content_len = *(uint16_t *)(p += 2);
+                        content_len = *(uint16_t *)p;
+                        p += 2;
                         len -= 2;
                     }
 
@@ -691,7 +698,7 @@ int main(int argc, char *argv[]){
                     if(content_len != len){
                         sn_log(
                             LOG_ERR,
-                            "content_len: %lld, recv len: %lld",
+                            "content_len: %lld, calced content len: %lld",
                             content_len,
                             len
                         );
