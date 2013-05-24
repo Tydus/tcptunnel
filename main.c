@@ -600,7 +600,9 @@ int main(int argc, char *argv[]){
             if(fork()){
                 sn_log(LOG_INFO, "encode process started");
                 for(;;){
-                    len = recv(encodefd, buffer, BUFF_LEN, 0);
+                    // Reserve 14 bytes for websocket header
+                    char *p = buffer + 14;
+                    len = recv(encodefd, buffer + 14, BUFF_LEN - 14, 0);
                     if(len < 0){
                         sn_log(LOG_NOTICE, "recv from encodefd failed");
                         shutdown(encodefd, SHUT_RD);
@@ -609,7 +611,34 @@ int main(int argc, char *argv[]){
                     }
                     if(len == 0)
                         break;
-                    len = send(decodefd, buffer, len, 0);
+
+                    // Encode the packet
+
+                    // process varlength header
+                    int tmp_len = len + 2; // websocket header
+                    if(tmp_len > 0xffff){
+                        *(uint64_t *)(p -= 8) = tmp_len;
+                        tmp_len = 127;
+                        len += 8;
+                    }
+                    else if(tmp_len > 0xff){
+                        *(uint64_t *)(p -= 2) = tmp_len;
+                        tmp_len = 126;
+                        len += 2;
+                    }
+
+                    // form header
+                    // TODO: implement masking
+                    WS_FRAME_HDR *p_header = (WS_FRAME_HDR *)(p -= 2);
+                    p_header->fin    = 0;
+                    p_header->rsv1   = 0;
+                    p_header->rsv2   = 0;
+                    p_header->rsv3   = 0;
+                    p_header->opcode = WS_FRAME_BIN;
+                    p_header->mask   = 0;
+                    p_header->len    = tmp_len;
+
+                    len = send(decodefd, p, len, 0);
                     if(len < 0){
                         sn_log(LOG_NOTICE, "send to decodefd failed");
                         shutdown(decodefd, SHUT_WR);
