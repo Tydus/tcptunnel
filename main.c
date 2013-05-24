@@ -700,7 +700,7 @@ int main(int argc, char *argv[]){
                         sn_log(LOG_ERR, "masked frame");
 
                         // get mask from header
-                        uint8_t *mask = p;
+                        char *mask = p;
                         p += 4;
 
                         // apply mask bytely
