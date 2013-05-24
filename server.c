@@ -176,7 +176,7 @@ int main(int argc, char *argv[]){
 #endif
 #undef next_opt
 
-    sn_log(LOG_DEBUG, "Finished parsing args");
+    sn_log(LOG_INFO, "Finished parsing args");
 
     srand(getpid());
 
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]){
             shutdown(connfd,SHUT_RDWR);
             return -1;
         }
-        sn_log(LOG_DEBUG,"sent http handshake packet, waiting for response");
+        sn_log(LOG_INFO,"sent http handshake packet, waiting for response");
 
         // Wait for response
         len = recv(connfd, buffer, BUFF_LEN, 0);
@@ -322,7 +322,7 @@ int main(int argc, char *argv[]){
             shutdown(connfd,SHUT_RDWR);
             return -1;
         }
-        sn_log(LOG_DEBUG, "Finish parsing handshake headers, start listening to native socket");
+        sn_log(LOG_INFO, "Finish parsing handshake headers, start listening to native socket");
 
 #endif // TCPT_CLIENT
 
@@ -347,7 +347,7 @@ int main(int argc, char *argv[]){
             &sin_len
         );
 
-        sn_log(LOG_DEBUG,"got a connection, fork a worker process");
+        sn_log(LOG_INFO,"got a connection, fork a worker process");
 
         if(!fork()){
 
@@ -359,7 +359,7 @@ int main(int argc, char *argv[]){
                 shutdown(acceptfd,SHUT_RDWR);
                 shutdown(connfd,SHUT_RDWR);
             }
-            sn_log(LOG_DEBUG, "Got http handshake packet");
+            sn_log(LOG_INFO, "Got http handshake packet");
 
             // Parse the request
             const char *bad_req = 
@@ -490,7 +490,7 @@ int main(int argc, char *argv[]){
                 shutdown(acceptfd,SHUT_RDWR);
                 return -1;
             }
-            sn_log(LOG_DEBUG, "Finish parsing handshake headers, write response");
+            sn_log(LOG_INFO, "Finish parsing handshake headers, write response");
 
             // Form handshake response
             const char *ret =
@@ -509,12 +509,12 @@ int main(int argc, char *argv[]){
                 shutdown(acceptfd,SHUT_RDWR);
                 return -1;
             }
-            sn_log(LOG_DEBUG, "sent handshake response, entering full duplex");
+            sn_log(LOG_INFO, "sent handshake response, entering full duplex");
 
 #endif //TCPT_SERVER
 
             if(fork()){
-                sn_log(LOG_DEBUG, "read from connfd process started");
+                sn_log(LOG_INFO, "read from connfd process started");
                 for(;;){
                     len = recv(connfd, buffer, BUFF_LEN, 0);
                     if(len < 0){
@@ -536,7 +536,7 @@ int main(int argc, char *argv[]){
                 shutdown(connfd,SHUT_RD);
                 shutdown(acceptfd,SHUT_WR);
             }else{
-                sn_log(LOG_DEBUG, "write to connfd process started");
+                sn_log(LOG_INFO, "write to connfd process started");
                 for(;;){
                     len = recv(acceptfd, buffer, BUFF_LEN, 0);
                     if(len < 0){
