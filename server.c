@@ -17,11 +17,20 @@
 
 int log_to_stderr = 0;
 
-int sn_log(int priority, const char *str){
-    if(log_to_stderr)
-        fputs(str, stderr);
-    else
-        syslog(priority, str, strlen(str));
+int sn_log(int priority, const char *format, ...){
+    va_list ap;
+    va_start(ap, format);
+    if(log_to_stderr){
+         fprintf(stderr, "<%d> ", priority);
+        vfprintf(stderr, format, ap);
+         fprintf(stderr, "\n");
+    }else{
+        // Use this to simulate vsyslog
+        char s[1024];
+        vsnprintf(s, 1024, format, ap);
+        syslog(priority, s, strlen(s));
+    }
+    va_end(ap);
     return 0;
 }
 
