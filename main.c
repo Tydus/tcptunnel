@@ -615,6 +615,8 @@ int main(int argc, char *argv[]){
 
                     // Encode the packet
 
+                    sn_log(LOG_DEBUG, "content length = %d", len);
+
                     // process varlength header
                     size_t content_len = len;
                     len += 2; // mandatory header
@@ -630,12 +632,7 @@ int main(int argc, char *argv[]){
                         len += 2;
                     }
 
-                    sn_log(
-                        LOG_DEBUG,
-                        "send len = %d, content_len = %d",
-                        len,
-                        content_len
-                    );
+                    sn_log(LOG_DEBUG, "send len = %d", len);
 
                     // form header
                     // TODO: implement masking
@@ -671,7 +668,6 @@ int main(int argc, char *argv[]){
                     if(len == 0)
                         break;
 
-
                     // Decode the packet
 
                     char *p = buffer;
@@ -694,14 +690,15 @@ int main(int argc, char *argv[]){
                     }
 
                     // check length
-                    // TODO: tcp framing
+                    sn_log(
+                        LOG_DEBUG,
+                        "content_len = %lld, calculated content len = %lld",
+                        content_len,
+                        len
+                    );
                     if(content_len != len){
-                        sn_log(
-                            LOG_ERR,
-                            "content_len: %lld, calced content len: %lld",
-                            content_len,
-                            len
-                        );
+                        // TODO: tcp framing
+                        sn_log(LOG_ERR, "content length mismatch");
                         shutdown(encodefd, SHUT_WR);
                         shutdown(decodefd, SHUT_RD);
                         return -1;
