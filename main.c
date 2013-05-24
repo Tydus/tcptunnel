@@ -616,17 +616,21 @@ int main(int argc, char *argv[]){
                     // Encode the packet
 
                     // process varlength header
-                    int tmp_len = len + 2; // mandatory header
-                    if(tmp_len > 0xffff){
-                        *(uint64_t *)(p -= 8) = tmp_len;
-                        tmp_len = 127;
+                    int content_len = len;
+                    len += 2; // mandatory header
+
+                    if(content_len > 0xffff){
+                        *(uint64_t *)(p -= 8) = content_len;
+                        content_len = 127;
                         len += 8;
                     }
-                    else if(tmp_len > 0xff){
-                        *(uint64_t *)(p -= 2) = tmp_len;
-                        tmp_len = 126;
+                    else if(len > 0xff){
+                        *(uint64_t *)(p -= 2) = content_len;
+                        content_len = 126;
                         len += 2;
                     }
+
+                    sn_log(LOG_DEBUG, "send len = %d", len);
 
                     // form header
                     // TODO: implement masking
@@ -637,7 +641,7 @@ int main(int argc, char *argv[]){
                     p_header->rsv3   = 0;
                     p_header->opcode = WS_FRAME_OPCODE_BIN;
                     p_header->mask   = 0;
-                    p_header->len    = tmp_len;
+                    p_header->len    = content_len;
 
                     len = send(decodefd, p, len, 0);
                     if(len < 0){
@@ -666,28 +670,29 @@ int main(int argc, char *argv[]){
                     // Decode the packet
 
                     char *p = buffer;
-                    WS_FRAME_HDR *p_header = (WS_FRAME_HDR *)p;
 
+                    WS_FRAME_HDR *p_header = (WS_FRAME_HDR *)p;
+                    p += 2;
                     len -= 2; // mandatory header
 
-                    size_t tmp_len = p_header->len;
-                    if(p_header->len == 127){
-                        tmp_len = *(uint64_t *)(p += 8);
+                    size_t content_len = p_header->len;
+
+                    if(content_len == 127){
+                        content_len = *(uint64_t *)(p += 8);
                         len -= 8;
                     }
-                    else if(p_header->len == 126){
-                        tmp_len = *(uint16_t *)(p += 2);
+                    else if(content_len == 126){
+                        content_len = *(uint16_t *)(p += 2);
                         len -= 2;
-                    }else
-                        tmp_len = p_header->len;
+                    }
 
                     // check length
                     // TODO: tcp framing
-                    if(tmp_len != len){
+                    if(content_len != len){
                         sn_log(
                             LOG_ERR,
-                            "tmp_len: %lld, len: %lld",
-                            tmp_len,
+                            "content_len: %lld, recv len: %lld",
+                            content_len,
                             len
                         );
                         shutdown(encodefd, SHUT_WR);
@@ -696,8 +701,7 @@ int main(int argc, char *argv[]){
                     }
 
                     if(p_header->mask == 1){
-                        // TODO: implement masking
-                        sn_log(LOG_ERR, "masked frame");
+                        sn_log(LOG_DEBUG, "masked frame, decoding");
 
                         // get mask from header
                         char *mask = p;
