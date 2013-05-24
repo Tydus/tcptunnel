@@ -16,6 +16,12 @@
 
 #define BUFF_LEN 32768
 
+#ifndef TCPT_CLIENT
+#ifndef TCPT_SERVER
+#define TCPT_SERVER // Default to TCPT_SERVER
+#endif
+#endif
+
 int log_to_stderr = 0;
 
 int sn_log(int priority, const char *format, ...){
@@ -120,8 +126,7 @@ int main(int argc, char *argv[]){
         "Listen Path        specify url path to listen on\n"
         "Connect Host       remote tcp server to connect\n"
         "Connect Port       remote port to connect\n"
-#endif
-#ifdef TCPT_CLIENT
+#else // TCPT_CLIENT
         "TCPTunnel Client\n"
         "\n"
         "%s [-h] [-e] <Listen Port> <Connect URL>\n"
@@ -179,8 +184,7 @@ int main(int argc, char *argv[]){
 
     conn_addr.sin_port = htons(atoi(next_opt));
 
-#endif
-#ifdef TCPT_CLIENT
+#else // TCPT_CLIENT
     if(argc - optind != 2){
         puts("insufficient argument count");
         printf(helpstr, argv[0]);
