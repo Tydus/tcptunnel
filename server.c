@@ -192,7 +192,7 @@ int main(int argc, char *argv[]){
             (struct sockaddr *)&conn_addr,
             sizeof(conn_addr)
         ) < 0){
-            fputs("Cannot connect to remote server\n", stderr);
+            sn_log(LOG_ERR, "cannot connect to remote server");
             return -1;
         }
 
