@@ -660,13 +660,71 @@ int main(int argc, char *argv[]){
                     }
                     if(len == 0)
                         break;
-                    len = send(encodefd, buffer, len, 0);
-                    if(len < 0){
-                        sn_log(LOG_NOTICE, "send to encodefd failed");
+
+
+                    // Decode the packet
+
+                    char *p = buffer;
+                    WS_FRAME_HDR *p_header = (WS_FRAME_HDR *)p;
+
+                    len -= 2; // mandatory header
+
+                    size_t tmp_len = p_header->len;
+                    if(p_header->len == 127){
+                        tmp_len = *(uint64_t *)(p += 8);
+                        len -= 8;
+                    }
+                    else if(p_header->len == 126){
+                        tmp_len = *(uint16_t *)(p += 2);
+                        len -= 2;
+                    else
+                        tmp_len = p_header->len;
+
+                    // check length
+                    // TODO: tcp framing
+                    if(tmp_len != len){
+                        sn_log(
+                            LOG_ERR,
+                            "tmp_len: %lld, len: %lld",
+                            tmp_len,
+                            len
+                        );
                         shutdown(encodefd, SHUT_WR);
                         shutdown(decodefd, SHUT_RD);
                         return -1;
                     }
+
+                    if(p_header->mask == 1){
+                        // TODO: implement masking
+                        sn_log(LOG_ERR, "masked frame");
+
+                        // get mask from header
+                        uint8_t *mask = p;
+                        p += 4;
+
+                        // apply mask bytely
+                        // TODO: stub implementation here
+                        for(int i = 0; i < len; i++)
+                            p[i] ^= mask[i%4];
+                    }
+
+                    switch(p_header->opcode){
+                    case WS_FRAME_OPCODE_BIN:
+                        len = send(encodefd, p, len, 0);
+                        if(len < 0){
+                            sn_log(LOG_NOTICE, "send to encodefd failed");
+                            shutdown(encodefd, SHUT_WR);
+                            shutdown(decodefd, SHUT_RD);
+                            return -1;
+                        }
+
+                        break;
+
+                    default:
+                        sn_log(LOG_NOTICE, "opcode %d not implemented, drop", p_header->opcode);
+                        break;
+                    }
+
                 }
                 shutdown(decodefd, SHUT_RD);
                 shutdown(encodefd, SHUT_WR);
