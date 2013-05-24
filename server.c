@@ -64,18 +64,19 @@ int main(int argc, char *argv[]){
 #ifdef TCPT_SERVER
         "TCPTunnel Server\n"
         "\n"
-        "%s [-h] [-e] <Listen Port> <Connect URL>\n"
-        "\n"
-        "Listen Port        specify port to listen on\n"
-        "Connect URL        websocket url to connect\n"
+        "%s [-h] [-e] <Listen Port> <Listen Path> <Connect Host> <Connect Port>\n"
+        "Listen Port        specify websocket server port to listen on\n"
+        "Listen Path        specify url path to listen on\n"
+        "Connect Host       remote tcp server to connect\n"
+        "Connect Port       remote port to connect\n"
 #endif
 #ifdef TCPT_CLIENT
         "TCPTunnel Client\n"
         "\n"
-        "%s [-h] [-e] <Listen Path> <Connect URL>\n"
-        "Listen Path        specify path to listen on\n"
-        "Connect Host       remote tcp server to connect\n"
-        "Connect Port       remote port to connect\n"
+        "%s [-h] [-e] <Listen Port> <Connect URL>\n"
+        "\n"
+        "Listen Port        specify port to listen on\n"
+        "Connect URL        websocket url to connect\n"
 #endif
         "-h,  --help        print this help.\n"
         "-e,  --stderr      write logs to stderr.\n";
@@ -108,11 +109,13 @@ int main(int argc, char *argv[]){
 
 #define next_opt (argv[optind++])
 #ifdef TCPT_SERVER
-    if(argc - optind != 3){
+    if(argc - optind != 4){
         puts("insufficient argument count");
         printf(helpstr, argv[0]);
         return -1;
     }
+    listen_addr.sin_port = htons(atoi(next_opt));
+
     const char *listen_path = next_opt;
 
     const char *connect_host = next_opt;
