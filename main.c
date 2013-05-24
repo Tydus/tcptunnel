@@ -570,50 +570,57 @@ int main(int argc, char *argv[]){
 
 #endif //TCPT_SERVER
 
+#ifdef TCPT_SERVER
+            int encodefd = connfd  ; // data from this fd will be encoded
+            int decodefd = listenfd; // data from this fd will be decoded
+#else // TCPT_CLIENT
+            int encodefd = listenfd; // data from this fd will be encoded
+            int decodefd = connfd  ; // data from this fd will be decoded
+#endif
             if(fork()){
-                sn_log(LOG_INFO, "read from connfd process started");
+                sn_log(LOG_INFO, "encode process started");
                 for(;;){
-                    len = recv(connfd, buffer, BUFF_LEN, 0);
+                    len = recv(encodefd, buffer, BUFF_LEN, 0);
                     if(len < 0){
-                        sn_log(LOG_NOTICE, "recv from connfd failed");
-                        shutdown(connfd,SHUT_RD);
-                        shutdown(acceptfd,SHUT_WR);
+                        sn_log(LOG_NOTICE, "recv from encodefd failed");
+                        shutdown(encodefd, SHUT_RD);
+                        shutdown(decodefd, SHUT_WR);
                         return -1;
                     }
                     if(len == 0)
                         break;
-                    len = send(acceptfd, buffer, len, 0);
+                    len = send(decodefd, buffer, len, 0);
                     if(len < 0){
-                        sn_log(LOG_NOTICE, "send to acceptfd failed");
-                        shutdown(acceptfd,SHUT_WR);
-                        shutdown(connfd,SHUT_RD);
+                        sn_log(LOG_NOTICE, "send to decodefd failed");
+                        shutdown(decodefd, SHUT_WR);
+                        shutdown(encodefd, SHUT_RD);
                         return -1;
                     }
                 }
-                shutdown(connfd,SHUT_RD);
-                shutdown(acceptfd,SHUT_WR);
+                shutdown(encodefd, SHUT_RD);
+                shutdown(decodefd, SHUT_WR);
             }else{
-                sn_log(LOG_INFO, "write to connfd process started");
+                sn_log(LOG_INFO, "decode process started");
                 for(;;){
-                    len = recv(acceptfd, buffer, BUFF_LEN, 0);
+                    len = recv(decodefd, buffer, BUFF_LEN, 0);
                     if(len < 0){
-                        sn_log(LOG_NOTICE, "recv from acceptfd failed");
-                        shutdown(acceptfd,SHUT_RD);
-                        shutdown(connfd,SHUT_WR);
+                        sn_log(LOG_NOTICE, "recv from decodefd failed");
+                        shutdown(decodefd, SHUT_RD);
+                        shutdown(encodefd, SHUT_WR);
                         return -1;
                     }
                     if(len == 0)
                         break;
-                    len = send(connfd, buffer, len, 0);
+                    len = send(encodefd, buffer, len, 0);
                     if(len < 0){
-                        sn_log(LOG_NOTICE, "send to connfd failed");
-                        shutdown(connfd,SHUT_WR);
-                        shutdown(acceptfd,SHUT_RD);
+                        sn_log(LOG_NOTICE, "send to encodefd failed");
+                        shutdown(encodefd, SHUT_WR);
+                        shutdown(decodefd, SHUT_RD);
                         return -1;
                     }
                 }
-                shutdown(acceptfd,SHUT_RD);
-                shutdown(connfd,SHUT_WR);
+                shutdown(decodefd, SHUT_RD);
+                shutdown(encodefd, SHUT_WR);
             }
             return 0;
         }
