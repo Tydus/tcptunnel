@@ -176,6 +176,7 @@ int main(int argc, char *argv[]){
 #endif
 #undef next_opt
 
+    sn_log(LOG_DEBUG, "Finished parsing args");
 
     srand(getpid());
 
@@ -232,6 +233,7 @@ int main(int argc, char *argv[]){
             shutdown(connfd,SHUT_RDWR);
             return -1;
         }
+        sn_log(LOG_DEBUG,"sent http handshake packet, waiting for response");
 
         // Wait for response
         len = recv(connfd, buffer, BUFF_LEN, 0);
@@ -340,6 +342,8 @@ int main(int argc, char *argv[]){
             (struct sockaddr *)&sin,
             &sin_len
         );
+
+        sn_log(LOG_DEBUG,"got a connection, fork a worker process");
 
         if(!fork()){
 
