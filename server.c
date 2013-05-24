@@ -327,11 +327,14 @@ int main(int argc, char *argv[]){
 
         if(listenfd == -1){
             listenfd = socket(PF_INET, SOCK_STREAM, 0);
-            bind(
+            if(bind(
                 listenfd,
                 (const struct sockaddr *)&listen_addr,
                 sizeof(listen_addr)
-            );
+            )){
+                sn_log(LOG_ERR, "bind() failed");
+                return -1;
+            }
             listen(listenfd, 10);
 
         }
