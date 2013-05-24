@@ -139,19 +139,20 @@ int calc_ws_protocol_ret(const char *challenge, char *response){
     return 0;
 }
 
-
-static struct option options[]={
-    {"help",         no_argument,       NULL, 'h'},
-    {"stderr",       no_argument,       NULL, 'e'},
-};
-
 int main(int argc, char *argv[]){
+
+    struct sockaddr_in conn_addr;
+    conn_addr.sin_family = AF_INET;
+
+    struct sockaddr_in listen_addr;
+    listen_addr.sin_family = AF_INET;
+    listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     const char *helpstr =
 #ifdef TCPT_SERVER
         "TCPTunnel Server\n"
         "\n"
-        "%s [-h] [-e] <Listen Port> <Listen Path> <Connect Host> <Connect Port>\n"
+        "%s [-b <addr>] [-h] [-e] <Listen Port> <Listen Path> <Connect Host> <Connect Port>\n"
         "Listen Port        specify websocket server port to listen on\n"
         "Listen Path        specify url path to listen on\n"
         "Connect Host       remote tcp server to connect\n"
@@ -159,16 +160,23 @@ int main(int argc, char *argv[]){
 #else // TCPT_CLIENT
         "TCPTunnel Client\n"
         "\n"
-        "%s [-h] [-e] <Listen Port> <Connect URL>\n"
+        "%s [-b <addr>] [-h] [-e] <Listen Port> <Connect URL>\n"
         "\n"
         "Listen Port        specify port to listen on\n"
         "Connect URL        websocket url to connect\n"
 #endif
+        "-b,  --bind        optional address to bind (default to 0.0.0.0)\n"
         "-h,  --help        print this help.\n"
         "-e,  --stderr      write logs to stderr.\n";
 
+    struct option options[]={
+        {"help",   no_argument,       NULL, 'h'},
+        {"stderr", no_argument,       NULL, 'e'},
+        {"bind",   required_argument, NULL, 'b'},
+    };
+
     for(;;){
-        int c = getopt_long(argc, argv, "he", options, NULL);
+        int c = getopt_long(argc, argv, "heb:", options, NULL);
         if(c == -1)
             break;
 
@@ -180,23 +188,18 @@ int main(int argc, char *argv[]){
         case 'e':
             log_to_stderr = 1;
             break;
+        case 'b':
+            listen_addr.sin_addr.s_addr = getipbyfqdn(optarg);
+            break;
         default:
             break;
         }
     }
 
-    struct sockaddr_in conn_addr;
-    conn_addr.sin_family = AF_INET;
-
-    struct sockaddr_in listen_addr;
-    listen_addr.sin_family = AF_INET;
-    listen_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-
 #define next_opt (argv[optind++])
 #ifdef TCPT_SERVER
     if(argc - optind != 4){
-        puts("insufficient argument count");
+        puts("insufficient argument");
         printf(helpstr, argv[0]);
         return -1;
     }
