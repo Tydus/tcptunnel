@@ -262,7 +262,11 @@ int main(int argc, char *argv[]){
                 // We are at the first line
                 float version;
                 int code;
-                sscanf(line, "HTTP/%f %d", &version, &code);
+                if(sscanf(line, "HTTP/%f %d", &version, &code) != 2){
+                    sn_log(LOG_ERR, "malformed status line");
+                    shutdown(connfd,SHUT_RDWR);
+                    return -1;
+                }
                 if(code != 101){
                     sn_log(LOG_ERR, "HTTP status code not 101");
                     shutdown(connfd,SHUT_RDWR);
@@ -387,7 +391,33 @@ int main(int argc, char *argv[]){
 
                 if(p){
                     // We are at the first line
-                    // Simply ignore it
+                    char method[strlen(line) + 1];
+                    char path[strlen(line) + 1];
+                    float version;
+                    if(sscanf(
+                        line,
+                        "%s %s HTTP/%f",
+                        method,
+                        path,
+                        &version
+                    ) != 3){
+                        sn_log(LOG_ERR, "malformed header");
+                        send(acceptfd, bad_req, strlen(bad_req), 0);
+                        shutdown(connfd,SHUT_RDWR);
+                        shutdown(acceptfd,SHUT_RDWR);
+                    }
+
+                    sn_log(LOG_DEBUG, "method = %s", method);
+                    sn_log(LOG_DEBUG, "path = %s", path);
+                    sn_log(LOG_DEBUG, "HTTP version = %f", version);
+
+                    if(strcmp(path, listen_path)){
+                        sn_log(LOG_ERR, "path mismatch");
+                        send(acceptfd, bad_req, strlen(bad_req), 0);
+                        shutdown(connfd,SHUT_RDWR);
+                        shutdown(acceptfd,SHUT_RDWR);
+                    }
+
                 }else{
                     // optional headers
                     char *key = line;
