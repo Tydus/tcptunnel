@@ -412,8 +412,8 @@ int main(int argc, char *argv[]){
                     sn_log(LOG_DEBUG, "HTTP version = %f", version);
 
                     if(strcmp(path, listen_path)){
-                        sn_log(LOG_ERR, "path mismatch");
-                        send(acceptfd, bad_req, strlen(bad_req), 0);
+                        sn_log(LOG_ERR, "path mismatch, send 404");
+                        send(acceptfd, bad_req, strlen(not_found), 0);
                         shutdown(connfd,SHUT_RDWR);
                         shutdown(acceptfd,SHUT_RDWR);
                     }
@@ -482,7 +482,7 @@ int main(int argc, char *argv[]){
 
             
             }
-            if(!ws_checker == 0){
+            if(ws_checker == 0){
                 sn_log(LOG_INFO, "http request, send 404");
                 send(acceptfd, bad_req, strlen(not_found), 0);
                 shutdown(connfd,SHUT_RDWR);
