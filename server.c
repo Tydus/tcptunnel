@@ -434,7 +434,7 @@ int main(int argc, char *argv[]){
                         ws_checker++;
                     }
                     match("Sec-WebSocket-Key"){
-                        if(!calc_ws_protocol_ret(value, ws_protocol_ret)){
+                        if(calc_ws_protocol_ret(value, ws_protocol_ret)){
                             sn_log(LOG_ERR, "Malformed Sec-WebSocket-Key");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
                             shutdown(connfd,SHUT_RDWR);
