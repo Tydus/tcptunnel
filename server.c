@@ -248,12 +248,10 @@ int main(int argc, char *argv[]){
         // Parse response packet
         for(char *p = buffer; ; p=NULL){
             char *line = strtok(p, "\r\n");
+
+            // FIXME: skip checking http header last empty line,
+            // due to strtok
             if(line == NULL){
-                sn_log(LOG_INFO, "reached EOP, but no http EOH found");
-                shutdown(connfd,SHUT_RDWR);
-                return -1;
-            }
-            if(line[0] == '\0'){
                 sn_log(LOG_DEBUG, "reach http eoh");
                 break;
             }
@@ -377,14 +375,10 @@ int main(int argc, char *argv[]){
 
             for(char *p = buffer; ; p=NULL){
                 char *line = strtok(p, "\r\n");
+
+                // FIXME: skip checking http header last empty line,
+                // due to strtok
                 if(line == NULL){
-                    sn_log(LOG_INFO, "reached EOP, but no http EOH found");
-                    send(acceptfd, bad_req, strlen(bad_req), 0);
-                    shutdown(connfd,SHUT_RDWR);
-                    shutdown(acceptfd,SHUT_RDWR);
-                    return -1;
-                }
-                if(line[0] == '\0'){
                     sn_log(LOG_DEBUG, "reach http eoh");
                     break;
                 }
