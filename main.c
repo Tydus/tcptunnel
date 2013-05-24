@@ -27,19 +27,19 @@ typedef struct __attribute__((packed)){
     int rsv1:1;
     int rsv2:1;
     int rsv3:1;
-    int opcode:4;
+    enum WS_FRAME_OPCODE opcode:4;
     int mask:1;
     int len:7;
 }WS_FRAME_HDR;
 
 
 enum WS_FRAME_OPCODE{
-    WS_FRAME_CONT  = 0x0,
-    WS_FRAME_TEXT  = 0x1,
-    WS_FRAME_BIN   = 0x2,
-    WS_FRAME_CLOSE = 0x8,
-    WS_FRAME_PING  = 0x9,
-    WS_FRAME_PONG  = 0xa
+    WS_FRAME_OPCODE_CONT  = 0x0,
+    WS_FRAME_OPCODE_TEXT  = 0x1,
+    WS_FRAME_OPCODE_BIN   = 0x2,
+    WS_FRAME_OPCODE_CLOSE = 0x8,
+    WS_FRAME_OPCODE_PING  = 0x9,
+    WS_FRAME_OPCODE_PONG  = 0xa
 };
 
 int log_to_stderr = 0;
@@ -615,7 +615,7 @@ int main(int argc, char *argv[]){
                     // Encode the packet
 
                     // process varlength header
-                    int tmp_len = len + 2; // websocket header
+                    int tmp_len = len + 2; // mandatory header
                     if(tmp_len > 0xffff){
                         *(uint64_t *)(p -= 8) = tmp_len;
                         tmp_len = 127;
@@ -634,7 +634,7 @@ int main(int argc, char *argv[]){
                     p_header->rsv1   = 0;
                     p_header->rsv2   = 0;
                     p_header->rsv3   = 0;
-                    p_header->opcode = WS_FRAME_BIN;
+                    p_header->opcode = WS_FRAME_OPCODE_BIN;
                     p_header->mask   = 0;
                     p_header->len    = tmp_len;
 
