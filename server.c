@@ -247,17 +247,16 @@ int main(int argc, char *argv[]){
 
         // Parse response packet
         for(char *p = buffer; ; p=NULL){
-            char *line = strtok(p, "\n");
-            if(line[0] == '\r'){
-                sn_log(LOG_DEBUG, "reach http eoh");
-                break;
-            }
-            if(line[0] == '\0'){
+            char *line = strtok(p, "\r\n");
+            if(line == NULL){
                 sn_log(LOG_INFO, "reached EOP, but no http EOH found");
                 shutdown(connfd,SHUT_RDWR);
                 return -1;
             }
-            line[strlen(line)-2] = '\0'; // trim trailing '\r'
+            if(line[0] == '\0'){
+                sn_log(LOG_DEBUG, "reach http eoh");
+                break;
+            }
 
             if(p){
                 // We are at the first line
@@ -373,19 +372,18 @@ int main(int argc, char *argv[]){
             char ws_protocol_ret[64] = "";
 
             for(char *p = buffer; ; p=NULL){
-                char *line = strtok(p, "\n");
-                if(line[0] == '\r'){
-                    sn_log(LOG_DEBUG, "reach http eoh");
-                    break;
-                }
-                if(line[0] == '\0'){
+                char *line = strtok(p, "\r\n");
+                if(line == NULL){
                     sn_log(LOG_INFO, "reached EOP, but no http EOH found");
                     send(acceptfd, bad_req, strlen(bad_req), 0);
                     shutdown(connfd,SHUT_RDWR);
                     shutdown(acceptfd,SHUT_RDWR);
                     return -1;
                 }
-                line[strlen(line)-2] = '\0'; // trim trailing '\r'
+                if(line[0] == '\0'){
+                    sn_log(LOG_DEBUG, "reach http eoh");
+                    break;
+                }
 
                 if(p){
                     // We are at the first line
