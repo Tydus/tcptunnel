@@ -34,6 +34,34 @@ int sn_log(int priority, const char *format, ...){
     return 0;
 }
 
+int set_keepalive(int socket, int value){
+    int old;
+    socklen_t len = sizeof(old);
+
+    int ret = getsockopt(
+        socket,
+        SOL_SOCKET,
+        SO_KEEPALIVE,
+        &old,
+        &len
+    );
+    if(ret < 0){
+        perror("getsockopt()");
+        return ret;
+    }
+    sn_log(LOG_DEBUG, "old keepalive = %d", old);
+
+    ret = setsockopt(
+        socket,
+        SOL_SOCKET,
+        SO_KEEPALIVE,
+        &value,
+        sizeof(value)
+    );
+    if(ret < 0)
+        perror("setsockopt()");
+    return ret;
+}
 
 int calc_ws_protocol_ret(const char *challenge, char *response){
     const char *magic_string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -195,6 +223,8 @@ int main(int argc, char *argv[]){
             sn_log(LOG_ERR, "cannot connect to remote server");
             return -1;
         }
+        if(set_keepalive(connfd, 1) < 0)
+            sn_log(LOG_WARNING, "cannot set keepalive on connfd");
 
 #ifdef TCPT_CLIENT
         const char *http_req_data =
