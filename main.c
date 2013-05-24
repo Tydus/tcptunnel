@@ -630,7 +630,7 @@ int main(int argc, char *argv[]){
                     // form header
                     // TODO: implement masking
                     WS_FRAME_HDR *p_header = (WS_FRAME_HDR *)(p -= 2);
-                    p_header->fin    = 0;
+                    p_header->fin    = 1;
                     p_header->rsv1   = 0;
                     p_header->rsv2   = 0;
                     p_header->rsv3   = 0;
