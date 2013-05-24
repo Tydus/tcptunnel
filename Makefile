@@ -10,10 +10,10 @@ all: $(OUT)
 tags: *.c *.h
 	ctags -R
 
-server: $(OBJS) server.c
+server: $(OBJS) main.c
 	$(CC) $(CFLAGS) -o $@ $^ -DTCPT_SERVER
 
-client: $(OBJS) server.c
+client: $(OBJS) main.c
 	$(CC) $(CFLAGS) -o $@ $^ -DTCPT_CLIENT
 
 $(OBJS): %.o:%.c
