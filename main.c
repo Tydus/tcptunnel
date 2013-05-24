@@ -339,7 +339,7 @@ int main(int argc, char *argv[]){
                 float version;
                 int code;
                 if(sscanf(line, "HTTP/%f %d", &version, &code) != 2){
-                    sn_log(LOG_ERR, "malformed status line");
+                    sn_log(LOG_ERR, "malformed status line: %s", line);
                     shutdown(connfd,SHUT_RDWR);
                     return -1;
                 }
