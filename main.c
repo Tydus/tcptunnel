@@ -27,7 +27,8 @@ typedef struct __attribute__((packed)){
     int rsv1:1;
     int rsv2:1;
     int rsv3:1;
-    enum WS_FRAME_OPCODE opcode:4;
+    //enum WS_FRAME_OPCODE opcode:4;
+    int opcode:4;
     int mask:1;
     int len:7;
 }WS_FRAME_HDR;
