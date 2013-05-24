@@ -49,7 +49,7 @@ int sn_log(int priority, const char *format, ...){
     va_list ap;
     va_start(ap, format);
     if(log_to_stderr){
-         fprintf(stderr, "<%d> ", priority);
+         fprintf(stderr, "<%d> %6d %6d ", priority, getpid(), getppid());
         vfprintf(stderr, format, ap);
          fprintf(stderr, "\n");
     }else{
