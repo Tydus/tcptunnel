@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <getopt.h>
 #include <netdb.h>
 
@@ -34,14 +35,14 @@ int sn_log(int priority, const char *format, ...){
     return 0;
 }
 
-int set_keepalive(int socket, int value){
+int set_sockopt_int(int socket, int family, int key, int value){
     int old;
     socklen_t len = sizeof(old);
 
     int ret = getsockopt(
         socket,
-        SOL_SOCKET,
-        SO_KEEPALIVE,
+        family,
+        key,
         &old,
         &len
     );
@@ -49,17 +50,39 @@ int set_keepalive(int socket, int value){
         perror("getsockopt()");
         return ret;
     }
-    sn_log(LOG_DEBUG, "old keepalive = %d", old);
+    sn_log(LOG_DEBUG, "keepalive value %d = %d", key,  old);
 
     ret = setsockopt(
         socket,
-        SOL_SOCKET,
-        SO_KEEPALIVE,
+        family,
+        key,
         &value,
         sizeof(value)
     );
     if(ret < 0)
         perror("setsockopt()");
+    return ret;
+}
+
+int set_keepalive(
+    int socket,
+    int enabled,
+    int time,
+    int intvl,
+    int probes
+){
+    // see http://tldp.org/HOWTO/html_single/TCP-Keepalive-HOWTO
+    int ret;
+    if((ret = set_sockopt_int(socket, SOL_SOCKET, SO_KEEPALIVE , enabled)) < 0)
+        return ret;
+
+#define chk_and_set(k,v) \
+    if(v != 0 && (ret = set_sockopt_int(socket, IPPROTO_TCP, k, v )) < 0) return ret;
+    chk_and_set(TCP_KEEPCNT  , probes);
+    chk_and_set(TCP_KEEPIDLE , time  );
+    chk_and_set(TCP_KEEPINTVL, intvl );
+#undef chk_and_set
+
     return ret;
 }
 
@@ -223,7 +246,7 @@ int main(int argc, char *argv[]){
             sn_log(LOG_ERR, "cannot connect to remote server");
             return -1;
         }
-        if(set_keepalive(connfd, 1) < 0)
+        if(set_keepalive(connfd, 1, 60, 30, 20) < 0)
             sn_log(LOG_WARNING, "cannot set keepalive on connfd");
 
 #ifdef TCPT_CLIENT
