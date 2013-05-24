@@ -592,9 +592,9 @@ int main(int argc, char *argv[]){
 
 #ifdef TCPT_SERVER
             int encodefd = connfd  ; // data from this fd will be encoded
-            int decodefd = listenfd; // data from this fd will be decoded
+            int decodefd = acceptfd; // data from this fd will be decoded
 #else // TCPT_CLIENT
-            int encodefd = listenfd; // data from this fd will be encoded
+            int encodefd = acceptfd; // data from this fd will be encoded
             int decodefd = connfd  ; // data from this fd will be decoded
 #endif
             if(fork()){
@@ -677,7 +677,7 @@ int main(int argc, char *argv[]){
                     else if(p_header->len == 126){
                         tmp_len = *(uint16_t *)(p += 2);
                         len -= 2;
-                    else
+                    }else
                         tmp_len = p_header->len;
 
                     // check length
