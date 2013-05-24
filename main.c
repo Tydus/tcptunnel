@@ -22,6 +22,26 @@
 #endif
 #endif
 
+typedef struct __attribute__((packed)){
+    int fin:1;
+    int rsv1:1;
+    int rsv2:1;
+    int rsv3:1;
+    int opcode:4;
+    int mask:1;
+    int len:7;
+}WS_FRAME_HDR;
+
+
+enum WS_FRAME_OPCODE{
+    WS_FRAME_CONT  = 0x0,
+    WS_FRAME_TEXT  = 0x1,
+    WS_FRAME_BIN   = 0x2,
+    WS_FRAME_CLOSE = 0x8,
+    WS_FRAME_PING  = 0x9,
+    WS_FRAME_PONG  = 0xa
+};
+
 int log_to_stderr = 0;
 
 int sn_log(int priority, const char *format, ...){
