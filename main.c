@@ -38,14 +38,14 @@ uint64_t _htonll(uint64_t hostlonglong){
 }
 
 typedef struct __attribute__((packed)){
-    unsigned fin:1;
-    unsigned rsv1:1;
-    unsigned rsv2:1;
-    unsigned rsv3:1;
+    unsigned len:7;
+    unsigned mask:1;
     //enum WS_FRAME_OPCODE opcode:4;
     unsigned opcode:4;
-    unsigned mask:1;
-    unsigned len:7;
+    unsigned rsv3:1;
+    unsigned rsv2:1;
+    unsigned rsv1:1;
+    unsigned fin:1;
 }WS_FRAME_HDR;
 
 
@@ -638,12 +638,12 @@ int main(int argc, char *argv[]){
                     len += 2; // mandatory header
 
                     if(content_len > 0xffff){
-                        *(uint64_t *)(p -= 8) = content_len;
+                        *(uint64_t *)(p -= 8) = _htonll(content_len);
                         content_len = 127;
                         len += 8;
                     }
                     else if(content_len > 126){
-                        *(uint16_t *)(p -= 2) = content_len;
+                        *(uint16_t *)(p -= 2) = htons(content_len);
                         content_len = 126;
                         len += 2;
                     }
@@ -660,6 +660,9 @@ int main(int argc, char *argv[]){
                     p_header->opcode = WS_FRAME_OPCODE_BIN;
                     p_header->mask   = 0;
                     p_header->len    = content_len;
+
+                    // convert byte order
+                    *(uint16_t *)p_header = htons(*(uint16_t *)p_header);
 
                     len = send(decodefd, p, len, 0);
                     if(len < 0){
@@ -689,18 +692,21 @@ int main(int argc, char *argv[]){
                     char *p = buffer;
 
                     WS_FRAME_HDR *p_header = (WS_FRAME_HDR *)p;
+                    // convert byte order
+                    *(uint16_t *)p_header = htons(*(uint16_t *)p_header);
+
                     p += 2;
                     len -= 2; // mandatory header
 
                     size_t content_len = p_header->len;
 
                     if(content_len == 127){
-                        content_len = *(uint64_t *)p;
+                        content_len = _htonll(*(uint64_t *)p);
                         p += 8;
                         len -= 8;
                     }
                     else if(content_len == 126){
-                        content_len = *(uint16_t *)p;
+                        content_len = htons(*(uint16_t *)p);
                         p += 2;
                         len -= 2;
                     }
