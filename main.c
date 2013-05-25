@@ -22,6 +22,21 @@
 #endif
 #endif
 
+uint64_t _htonll(uint64_t hostlonglong){
+    uint32_t t = 1;
+    if(htonl(t) == t)
+        return hostlonglong;
+
+    uint64_t ret;
+#define upper32(x) *((uint32_t *)&(x) + 0)
+#define lower32(x) *((uint32_t *)&(x) + 1)
+    lower32(ret) = htonl(upper32(hostlonglong));
+    upper32(ret) = htonl(lower32(hostlonglong));
+#undef lower32
+#undef upper32
+    return ret;
+}
+
 typedef struct __attribute__((packed)){
     unsigned fin:1;
     unsigned rsv1:1;
