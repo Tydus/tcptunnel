@@ -338,6 +338,7 @@ int main(int argc, char *argv[]){
         }
         buffer[len] = '\0';
 
+        sn_log(LOG_DEBUG, "recv data:\n%*s", len, buffer);
 
         int ws_checker = 0;
 
@@ -352,6 +353,7 @@ int main(int argc, char *argv[]){
                 break;
             }
 
+            sn_log(LOG_DEBUG, "parsing line: %s", line);
             if(p){
                 // We are at the first line
                 float version;
@@ -458,6 +460,7 @@ int main(int argc, char *argv[]){
             sn_log(LOG_INFO, "Got http handshake packet");
 
             buffer[len] = '\0';
+            sn_log(LOG_DEBUG, "recv data:\n%*s", len, buffer);
 
             // Parse the request
             const char *bad_req = 
@@ -481,6 +484,7 @@ int main(int argc, char *argv[]){
                     break;
                 }
 
+                sn_log(LOG_DEBUG, "parsing line: %s", line);
                 if(p){
                     // We are at the first line
                     char method[strlen(line) + 1];
@@ -698,6 +702,24 @@ int main(int argc, char *argv[]){
                     WS_FRAME_HDR *p_header = (WS_FRAME_HDR *)p;
                     // convert byte order
                     *(uint16_t *)p_header = htons(*(uint16_t *)p_header);
+
+                    sn_log(
+                        LOG_DEBUG,
+                        "fin: %u\n",
+                        "rsv1: %u\n",
+                        "rsv2: %u\n",
+                        "rsv3: %u\n",
+                        "opcode: %u\n",
+                        "mask: %u\n",
+                        "len: %u\n",
+                        p_header->fin,
+                        p_header->rsv1,
+                        p_header->rsv2,
+                        p_header->rsv3,
+                        p_header->opcode,
+                        p_header->mask,
+                        p_header->len
+                    );
 
                     p += 2;
                     len -= 2; // mandatory header
