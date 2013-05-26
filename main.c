@@ -330,12 +330,14 @@ int main(int argc, char *argv[]){
         sn_log(LOG_INFO,"sent http handshake packet, waiting for response");
 
         // Wait for response
-        len = recv(connfd, buffer, BUFF_LEN, 0);
+        len = recv(connfd, buffer, BUFF_LEN - 1, 0);
         if(len < 0){
             sn_log(LOG_NOTICE, "recv from connfd failed");
             shutdown(connfd,SHUT_RDWR);
             return -1;
         }
+        buffer[len] = '\0';
+
 
         int ws_checker = 0;
 
@@ -447,13 +449,15 @@ int main(int argc, char *argv[]){
 
 #ifdef TCPT_SERVER
             // Wait for websocket HTTP Handshake
-            len = recv(acceptfd, buffer, BUFF_LEN, 0);
+            len = recv(acceptfd, buffer, BUFF_LEN - 1, 0);
             if(len < 0){
                 sn_log(LOG_NOTICE, "recv from acceptfd failed");
                 shutdown(acceptfd,SHUT_RDWR);
                 shutdown(connfd,SHUT_RDWR);
             }
             sn_log(LOG_INFO, "Got http handshake packet");
+
+            buffer[len] = '\0';
 
             // Parse the request
             const char *bad_req = 
