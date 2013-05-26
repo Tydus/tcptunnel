@@ -501,7 +501,7 @@ int main(int argc, char *argv[]){
 
                     sn_log(LOG_DEBUG, "method = %s", method);
                     sn_log(LOG_DEBUG, "path = %s", path);
-                    sn_log(LOG_DEBUG, "HTTP version = %f", version);
+                    sn_log(LOG_DEBUG, "HTTP version = %.1f", version);
 
                     if(strcmp(path, listen_path)){
                         sn_log(LOG_ERR, "path mismatch, send 404");
@@ -635,7 +635,7 @@ int main(int argc, char *argv[]){
 
                     // Encode the packet
 
-                    sn_log(LOG_DEBUG, "content length = %d", len);
+                    sn_log(LOG_DEBUG, "content length = %llu", len);
 
                     // process varlength header
                     size_t content_len = len;
@@ -652,7 +652,7 @@ int main(int argc, char *argv[]){
                         len += 2;
                     }
 
-                    sn_log(LOG_DEBUG, "send len = %d", len);
+                    sn_log(LOG_DEBUG, "send len = %llu", len);
 
                     // form header
                     // TODO: implement masking
@@ -718,7 +718,7 @@ int main(int argc, char *argv[]){
                     // check length
                     sn_log(
                         LOG_DEBUG,
-                        "content_len = %lld, calculated content len = %lld",
+                        "content_len = %llu, calculated content len = %llu",
                         content_len,
                         len
                     );
