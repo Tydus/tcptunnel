@@ -324,7 +324,7 @@ int main(int argc, char *argv[]){
         len = send(connfd, buffer, len, 0);
         if(len < 0){
             sn_log(LOG_NOTICE, "send to connfd failed");
-            shutdown(connfd,SHUT_RDWR);
+            shutdown(connfd, SHUT_RDWR);
             return -1;
         }
         sn_log(LOG_INFO,"sent http handshake packet, waiting for response");
@@ -333,7 +333,7 @@ int main(int argc, char *argv[]){
         len = recv(connfd, buffer, BUFF_LEN - 1, 0);
         if(len < 0){
             sn_log(LOG_NOTICE, "recv from connfd failed");
-            shutdown(connfd,SHUT_RDWR);
+            shutdown(connfd, SHUT_RDWR);
             return -1;
         }
         buffer[len] = '\0';
@@ -360,12 +360,12 @@ int main(int argc, char *argv[]){
                 int code;
                 if(sscanf(line, "HTTP/%f %d", &version, &code) != 2){
                     sn_log(LOG_ERR, "malformed status line: %s", line);
-                    shutdown(connfd,SHUT_RDWR);
+                    shutdown(connfd, SHUT_RDWR);
                     return -1;
                 }
                 if(code != 101){
                     sn_log(LOG_ERR, "HTTP status code not 101");
-                    shutdown(connfd,SHUT_RDWR);
+                    shutdown(connfd, SHUT_RDWR);
                     return -1;
                 }
 
@@ -375,7 +375,7 @@ int main(int argc, char *argv[]){
                 char *value = strchr(line, ':');
                 if(value == NULL){
                     sn_log(LOG_ERR, "malformed optional header");
-                    shutdown(connfd,SHUT_RDWR);
+                    shutdown(connfd, SHUT_RDWR);
                 }
                 *value = '\0';
 
@@ -386,7 +386,7 @@ int main(int argc, char *argv[]){
                 match("Connection"){
                     if(strcasecmp(value, "upgrade")){
                         sn_log(LOG_ERR, "Connection is not upgrade");
-                        shutdown(connfd,SHUT_RDWR);
+                        shutdown(connfd, SHUT_RDWR);
                         return -1;
                     }
                     ws_checker++;
@@ -394,7 +394,7 @@ int main(int argc, char *argv[]){
                 match("Upgrade"){
                     if(strcasecmp(value, "websocket")){
                         sn_log(LOG_ERR, "Upgrade is not websocket");
-                        shutdown(connfd,SHUT_RDWR);
+                        shutdown(connfd, SHUT_RDWR);
                         return -1;
                     }
                     ws_checker++;
@@ -405,7 +405,7 @@ int main(int argc, char *argv[]){
                 match("Sec-WebSocket-Accept"){
                     if(strcmp(value, expected_response_str)){
                         sn_log(LOG_ERR, "Malformed Sec-WebSocket-Accept");
-                        shutdown(connfd,SHUT_RDWR);
+                        shutdown(connfd, SHUT_RDWR);
                         return -1;
                     }
                     ws_checker++;
@@ -417,7 +417,7 @@ int main(int argc, char *argv[]){
         }
         if(ws_checker != 4){
             sn_log(LOG_ERR, "websocket protocol missing mandatory headers");
-            shutdown(connfd,SHUT_RDWR);
+            shutdown(connfd, SHUT_RDWR);
             return -1;
         }
         sn_log(LOG_INFO, "Finish parsing handshake headers, start listening to native socket");
@@ -454,8 +454,8 @@ int main(int argc, char *argv[]){
             len = recv(acceptfd, buffer, BUFF_LEN - 1, 0);
             if(len < 0){
                 sn_log(LOG_NOTICE, "recv from acceptfd failed");
-                shutdown(acceptfd,SHUT_RDWR);
-                shutdown(connfd,SHUT_RDWR);
+                shutdown(acceptfd, SHUT_RDWR);
+                shutdown(connfd, SHUT_RDWR);
             }
             sn_log(LOG_INFO, "Got http handshake packet");
 
@@ -499,8 +499,8 @@ int main(int argc, char *argv[]){
                     ) != 3){
                         sn_log(LOG_ERR, "malformed header");
                         send(acceptfd, bad_req, strlen(bad_req), 0);
-                        shutdown(connfd,SHUT_RDWR);
-                        shutdown(acceptfd,SHUT_RDWR);
+                        shutdown(connfd, SHUT_RDWR);
+                        shutdown(acceptfd, SHUT_RDWR);
                     }
 
                     sn_log(LOG_DEBUG, "method = %s", method);
@@ -510,8 +510,8 @@ int main(int argc, char *argv[]){
                     if(strcmp(path, listen_path)){
                         sn_log(LOG_ERR, "path mismatch, send 404");
                         send(acceptfd, bad_req, strlen(not_found), 0);
-                        shutdown(connfd,SHUT_RDWR);
-                        shutdown(acceptfd,SHUT_RDWR);
+                        shutdown(connfd, SHUT_RDWR);
+                        shutdown(acceptfd, SHUT_RDWR);
                     }
 
                 }else{
@@ -521,8 +521,8 @@ int main(int argc, char *argv[]){
                     if(value == NULL){
                         sn_log(LOG_ERR, "malformed optional header");
                         send(acceptfd, bad_req, strlen(bad_req), 0);
-                        shutdown(connfd,SHUT_RDWR);
-                        shutdown(acceptfd,SHUT_RDWR);
+                        shutdown(connfd, SHUT_RDWR);
+                        shutdown(acceptfd, SHUT_RDWR);
                     }
                     *value = '\0';
 
@@ -534,8 +534,8 @@ int main(int argc, char *argv[]){
                         if(strcasecmp(value, "upgrade")){
                             sn_log(LOG_ERR, "Connection is not upgrade");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
-                            shutdown(connfd,SHUT_RDWR);
-                            shutdown(acceptfd,SHUT_RDWR);
+                            shutdown(connfd, SHUT_RDWR);
+                            shutdown(acceptfd, SHUT_RDWR);
                             return -1;
                         }
                         ws_checker++;
@@ -544,8 +544,8 @@ int main(int argc, char *argv[]){
                         if(strcasecmp(value, "websocket")){
                             sn_log(LOG_ERR, "Upgrade is not websocket");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
-                            shutdown(connfd,SHUT_RDWR);
-                            shutdown(acceptfd,SHUT_RDWR);
+                            shutdown(connfd, SHUT_RDWR);
+                            shutdown(acceptfd, SHUT_RDWR);
                             return -1;
                         }
                         ws_checker++;
@@ -554,8 +554,8 @@ int main(int argc, char *argv[]){
                         if(strcmp(value, "13")){
                             sn_log(LOG_ERR, "Sec-WebSocket-Version is not 13");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
-                            shutdown(connfd,SHUT_RDWR);
-                            shutdown(acceptfd,SHUT_RDWR);
+                            shutdown(connfd, SHUT_RDWR);
+                            shutdown(acceptfd, SHUT_RDWR);
                             return -1;
                         }
                         ws_checker++;
@@ -564,8 +564,8 @@ int main(int argc, char *argv[]){
                         if(calc_ws_protocol_ret(value, ws_protocol_ret)){
                             sn_log(LOG_ERR, "Malformed Sec-WebSocket-Key");
                             send(acceptfd, bad_req, strlen(bad_req), 0);
-                            shutdown(connfd,SHUT_RDWR);
-                            shutdown(acceptfd,SHUT_RDWR);
+                            shutdown(connfd, SHUT_RDWR);
+                            shutdown(acceptfd, SHUT_RDWR);
                             return -1;
                         }
                         ws_checker++;
@@ -581,15 +581,15 @@ int main(int argc, char *argv[]){
             if(ws_checker == 0){
                 sn_log(LOG_INFO, "http request, send 404");
                 send(acceptfd, bad_req, strlen(not_found), 0);
-                shutdown(connfd,SHUT_RDWR);
-                shutdown(acceptfd,SHUT_RDWR);
+                shutdown(connfd, SHUT_RDWR);
+                shutdown(acceptfd, SHUT_RDWR);
                 return -1;
             }
             if(ws_checker != 5){
                 sn_log(LOG_ERR, "websocket protocol missing mandatory headers");
                 send(acceptfd, bad_req, strlen(bad_req), 0);
-                shutdown(connfd,SHUT_RDWR);
-                shutdown(acceptfd,SHUT_RDWR);
+                shutdown(connfd, SHUT_RDWR);
+                shutdown(acceptfd, SHUT_RDWR);
                 return -1;
             }
             sn_log(LOG_INFO, "Finish parsing handshake headers, write response");
@@ -607,8 +607,8 @@ int main(int argc, char *argv[]){
             len = send(acceptfd, buffer, len, 0);
             if(len < 0){
                 sn_log(LOG_NOTICE, "send to connfd failed");
-                shutdown(connfd,SHUT_RDWR);
-                shutdown(acceptfd,SHUT_RDWR);
+                shutdown(connfd, SHUT_RDWR);
+                shutdown(acceptfd, SHUT_RDWR);
                 return -1;
             }
             sn_log(LOG_INFO, "sent handshake response, entering full duplex");
