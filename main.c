@@ -157,6 +157,7 @@ int main(int argc, char *argv[]){
 
     struct sockaddr_in conn_addr;
     conn_addr.sin_family = AF_INET;
+    conn_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     struct sockaddr_in listen_addr;
     listen_addr.sin_family = AF_INET;
@@ -180,17 +181,25 @@ int main(int argc, char *argv[]){
         "Connect URL        websocket url to connect\n"
 #endif
         "-b,  --bind        optional address to bind (default to 0.0.0.0)\n"
+        "-r,  --remote-ip   override server ip to connect to (default get from url)\n"
         "-h,  --help        print this help.\n"
         "-e,  --stderr      write logs to stderr.\n";
 
     struct option options[]={
-        {"help",   no_argument,       NULL, 'h'},
-        {"stderr", no_argument,       NULL, 'e'},
-        {"bind",   required_argument, NULL, 'b'},
+        {"help",      no_argument,       NULL, 'h'},
+        {"stderr",    no_argument,       NULL, 'e'},
+        {"bind",      required_argument, NULL, 'b'},
+#ifdef TCPT_CLIENT
+        {"remote-ip", required_argument, NULL, 'r'},
+#endif
     };
 
     for(;;){
+#ifdef TCPT_SERVER
         int c = getopt_long(argc, argv, "heb:", options, NULL);
+#else
+        int c = getopt_long(argc, argv, "heb:r:", options, NULL);
+#endif
         if(c == -1)
             break;
 
@@ -205,6 +214,12 @@ int main(int argc, char *argv[]){
         case 'b':
             listen_addr.sin_addr.s_addr = getipbyfqdn(optarg);
             break;
+#ifdef TCPT_CLIENT
+        case 'r':
+            // Override server's address
+            conn_addr.sin_addr.s_addr = getipbyfqdn(optarg);
+            break;
+#endif
         default:
             break;
         }
@@ -268,12 +283,15 @@ int main(int argc, char *argv[]){
         conn_addr.sin_port = htons(atoi(tmp));
     }
         
-    int addr = getipbyfqdn(connect_url_host);
-    if(addr == 0){
-        fprintf(stderr, "cannot find host: %s\n", connect_url_host);
-        return -1;
+    // Set it only if we are not overriding server's address
+    if(conn_addr.sin_addr.s_addr == htonl(INADDR_ANY)){
+        int addr = getipbyfqdn(connect_url_host);
+        if(addr == 0){
+            fprintf(stderr, "cannot find host: %s\n", connect_url_host);
+            return -1;
+        }
+        conn_addr.sin_addr.s_addr = addr;
     }
-    conn_addr.sin_addr.s_addr = addr;
 
 #endif
 #undef next_opt
