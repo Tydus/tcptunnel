@@ -80,8 +80,7 @@ int sn_log(int priority, const char *format, ...){
 uint32_t getipbyfqdn(const char *fqdn){
     struct hostent *p = gethostbyname(fqdn);
     if(p == NULL || p->h_length == 0){
-        printf("cannot find host: %s", fqdn);
-        return -1;
+        return 0; // 0.0.0.0
     }
     return *(uint32_t *)p->h_addr_list[0];
 }
@@ -222,7 +221,13 @@ int main(int argc, char *argv[]){
 
     const char *listen_path = next_opt;
 
-    conn_addr.sin_addr.s_addr = getipbyfqdn(next_opt);
+    const char *fqdn = next_opt;
+    int addr = getipbyfqdn(fqdn);
+    if(addr == 0){
+        fprintf(stderr, "cannot find host: %s\n", fqdn);
+        return -1;
+    }
+    conn_addr.sin_addr.s_addr = addr;
 
     conn_addr.sin_port = htons(atoi(next_opt));
 
@@ -263,7 +268,12 @@ int main(int argc, char *argv[]){
         conn_addr.sin_port = htons(atoi(tmp));
     }
         
-    conn_addr.sin_addr.s_addr = getipbyfqdn(connect_url_host);
+    int addr = getipbyfqdn(connect_url_host);
+    if(addr == 0){
+        fprintf(stderr, "cannot find host: %s\n", connect_url_host);
+        return -1;
+    }
+    conn_addr.sin_addr.s_addr = addr;
 
 #endif
 #undef next_opt
