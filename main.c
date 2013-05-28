@@ -179,9 +179,9 @@ int main(int argc, char *argv[]){
         "\n"
         "Listen Port        specify port to listen on\n"
         "Connect URL        websocket url to connect\n"
+        "-r,  --remote-ip   override server ip to connect to (default get from url)\n"
 #endif
         "-b,  --bind        optional address to bind (default to 0.0.0.0)\n"
-        "-r,  --remote-ip   override server ip to connect to (default get from url)\n"
         "-h,  --help        print this help.\n"
         "-e,  --stderr      write logs to stderr.\n";
 
