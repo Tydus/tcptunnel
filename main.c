@@ -347,7 +347,6 @@ int main(int argc, char *argv[]){
             "Connection: Upgrade\r\n"
             "Upgrade: websocket\r\n"
             "Sec-WebSocket-Key: %s\r\n"
-            "Sec-WebSocket-Protocol: chat\r\n"
             "Sec-WebSocket-Version: 13\r\n"
             "\r\n";
 
@@ -449,9 +448,6 @@ int main(int argc, char *argv[]){
                     }
                     ws_checker++;
                 }
-                match("Sec-WebSocket-Protocol"){
-                    ws_checker++;
-                }
                 match("Sec-WebSocket-Accept"){
                     if(strcmp(value, expected_response_str)){
                         sn_log(LOG_ERR, "Malformed Sec-WebSocket-Accept");
@@ -465,7 +461,7 @@ int main(int argc, char *argv[]){
 
         
         }
-        if(ws_checker != 4){
+        if(ws_checker != 3){
             sn_log(LOG_ERR, "websocket protocol missing mandatory headers");
             shutdown(connfd, SHUT_RDWR);
             return -1;
@@ -620,9 +616,6 @@ int main(int argc, char *argv[]){
                         }
                         ws_checker++;
                     }
-                    match("Sec-WebSocket-Protocol"){
-                        ws_checker++;
-                    }
 #undef match
                 }
 
@@ -635,7 +628,7 @@ int main(int argc, char *argv[]){
                 shutdown(acceptfd, SHUT_RDWR);
                 return -1;
             }
-            if(ws_checker != 5){
+            if(ws_checker != 4){
                 sn_log(LOG_ERR, "websocket protocol missing mandatory headers");
                 send(acceptfd, bad_req, strlen(bad_req), 0);
                 shutdown(connfd, SHUT_RDWR);
@@ -649,7 +642,6 @@ int main(int argc, char *argv[]){
                 "HTTP/1.1 101 Switching Protocols\r\n"
                 "Connection: Upgrade\r\n"
                 "Upgrade: websocket\r\n"
-                "Sec-WebSocket-Protocol: chat\r\n"
                 "Sec-WebSocket-Accept: %s\r\n"
                 "\r\n";
 
