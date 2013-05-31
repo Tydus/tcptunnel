@@ -794,9 +794,10 @@ int main(int argc, char *argv[]){
                         content_len,
                         len
                     );
-                    if(content_len != len){
+
+                    if(content_len < len){
                         // TODO: tcp framing
-                        sn_log(LOG_ERR, "content length mismatch");
+                        sn_log(LOG_ERR, "extra data");
                         shutdown(encodefd, SHUT_WR);
                         shutdown(decodefd, SHUT_RD);
                         return -1;
@@ -815,15 +816,60 @@ int main(int argc, char *argv[]){
                             p[i] ^= mask[i%4];
                     }
 
+                    if(content_len > len){
+                        // fragmented frame
+                        sn_log(LOG_INFO, "fragmented data, write and wait for next packet");
+                    }
+
                     switch(p_header->opcode){
                     case WS_FRAME_OPCODE_BIN:
-                        len = send(encodefd, p, len, 0);
-                        if(len < 0){
-                            sn_log(LOG_NOTICE, "send to encodefd failed");
-                            shutdown(encodefd, SHUT_WR);
-                            shutdown(decodefd, SHUT_RD);
-                            return -1;
-                        }
+                        do{
+                            // send contents
+                            int send_len = send(encodefd, p, len, 0);
+                            if(send_len < 0){
+                                sn_log(LOG_NOTICE, "send to encodefd failed");
+                                shutdown(encodefd, SHUT_WR);
+                                shutdown(decodefd, SHUT_RD);
+                                return -1;
+                            }
+                            if(send_len != len){
+                                sn_log(LOG_ERR, "partially sent?!");
+                                shutdown(encodefd, SHUT_WR);
+                                shutdown(decodefd, SHUT_RD);
+                                return -1;
+                            }
+
+                            content_len -= send_len;
+                            if(content_len > 0){
+                                sn_log(
+                                    LOG_INFO,
+                                    "partially recv()ed, read %d more bytes",
+                                    content_len
+                                );
+                                // read more fragments
+                                int recv_len = content_len;
+                                if(recv_len > BUFF_LEN)
+                                    recv_len = content_len;
+                                p = buffer;
+
+                                len = recv(decodefd, p, recv_len, 0);
+                                if(len < 0){
+                                    sn_log(
+                                        LOG_NOTICE,
+                                        "recv from decodefd failed"
+                                    );
+                                    shutdown(decodefd, SHUT_RD);
+                                    shutdown(encodefd, SHUT_WR);
+                                    return -1;
+                                }
+                                if(len == 0){
+                                    shutdown(decodefd, SHUT_RD);
+                                    shutdown(encodefd, SHUT_WR);
+                                    return 0;
+                                }
+
+                            }
+                        }while(content_len > 0);
 
                         break;
 
