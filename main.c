@@ -5,6 +5,8 @@
 #include <syslog.h>
 #include <string.h>
 #include <strings.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -75,6 +77,21 @@ int sn_log(int priority, const char *format, ...){
     }
     va_end(ap);
     return 0;
+}
+
+static void sigchld(int signo){
+    pid_t pid;
+    int status;
+    for(;;){
+        pid = waitpid(-1, &status, WNOHANG);
+        if(pid < 0){
+            sn_log(LOG_WARNING, "wait() error");
+            break;
+        }
+        if(pid == 0)
+            break;
+        sn_log(LOG_INFO, "wait() for pid %d", pid);
+    }
 }
 
 uint32_t getipbyfqdn(const char *fqdn){
@@ -299,6 +316,11 @@ int main(int argc, char *argv[]){
     sn_log(LOG_INFO, "Finished parsing args");
 
     srand(getpid());
+
+    if(signal(SIGCHLD, sigchld) == SIG_ERR){
+        sn_log(LOG_ERR, "signal() failed");
+        return -1;
+    }
 
     char buffer[BUFF_LEN];
     size_t len;
